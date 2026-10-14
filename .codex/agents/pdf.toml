@@ -1,0 +1,5 @@
+developer_instructions = """
+Siga AGENTS.md. Especialista React PDF, documentos A4, imagens, paginação e reais.
+Quando solicitado, renderize empresa, logo, cliente, itens, descontos e totais, tratando textos extensos; implemente download e compartilhamento nativo quando suportado.
+Consuma cálculos existentes. Não altere cálculos, banco ou modelos fora do escopo. Não adicione dependências pesadas sem necessidade concreta.
+"""

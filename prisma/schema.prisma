@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/gerado/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Empresa {
+  idEmpresa              String      @id @default(uuid()) @map("id_empresa")
+  nome                   String      @map("nome")
+  telefone               String?     @map("telefone")
+  logoChave              String?     @map("logo_chave")
+  proximoNumeroOrcamento Int         @default(1) @map("proximo_numero_orcamento")
+  ativa                  Boolean     @default(true) @map("ativa")
+  dataCriacao            DateTime    @default(now()) @map("data_criacao")
+  dataAtualizacao        DateTime    @updatedAt @map("data_atualizacao")
+  usuarios               Usuario[]
+  assinatura             Assinatura?
+  orcamentos             Orcamento[]
+
+  @@map("empresa")
+}
+
+// Nomes internos preservam o contrato do Better Auth; colunas físicas são em português.
+model Usuario {
+  id            String   @id @default(uuid()) @map("id_usuario")
+  name          String   @map("nome")
+  email         String   @unique @map("email")
+  emailVerified Boolean  @default(false) @map("email_verificado")
+  image         String?  @map("imagem")
+  createdAt     DateTime @default(now()) @map("data_criacao")
+  updatedAt     DateTime @updatedAt @map("data_atualizacao")
+  idEmpresa     String   @map("id_empresa")
+  ativo         Boolean  @default(true) @map("ativo")
+  empresa       Empresa  @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
+  sessoes       Sessao[]
+  contas        Conta[]
+
+  @@index([idEmpresa, ativo])
+  @@map("usuario")
+}
+
+model Sessao {
+  id        String   @id @default(uuid()) @map("id_sessao")
+  expiresAt DateTime @map("data_expiracao")
+  token     String   @unique @map("token")
+  createdAt DateTime @default(now()) @map("data_criacao")
+  updatedAt DateTime @updatedAt @map("data_atualizacao")
+  ipAddress String?  @map("endereco_ip")
+  userAgent String?  @map("agente_usuario")
+  userId    String   @map("id_usuario")
+  usuario   Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessao")
+}
+
+model Conta {
+  id                    String    @id @default(uuid()) @map("id_conta")
+  accountId             String    @map("id_conta_provedor")
+  providerId            String    @map("id_provedor")
+  userId                String    @map("id_usuario")
+  accessToken           String?   @map("token_acesso")
+  refreshToken          String?   @map("token_renovacao")
+  idToken               String?   @map("token_identidade")
+  accessTokenExpiresAt  DateTime? @map("data_expiracao_token_acesso")
+  refreshTokenExpiresAt DateTime? @map("data_expiracao_token_renovacao")
+  scope                 String?   @map("escopo")
+  password              String?   @map("senha")
+  createdAt             DateTime  @default(now()) @map("data_criacao")
+  updatedAt             DateTime  @updatedAt @map("data_atualizacao")
+  usuario               Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("conta")
+}
+
+model Verificacao {
+  id         String   @id @default(uuid()) @map("id_verificacao")
+  identifier String   @map("identificador")
+  value      String   @map("valor")
+  expiresAt  DateTime @map("data_expiracao")
+  createdAt  DateTime @default(now()) @map("data_criacao")
+  updatedAt  DateTime @updatedAt @map("data_atualizacao")
+
+  @@index([identifier])
+  @@map("verificacao")
+}
+
+enum SituacaoAssinatura {
+  ATIVA
+  SUSPENSA
+
+  @@map("situacao_assinatura")
+}
+
+enum SituacaoOrcamento {
+  RASCUNHO
+  ENVIADO
+  APROVADO
+  RECUSADO
+  CANCELADO
+
+  @@map("situacao_orcamento")
+}
+
+enum TipoDesconto {
+  FIXO
+  PERCENTUAL
+
+  @@map("tipo_desconto")
+}
+
+model Assinatura {
+  idAssinatura         String             @id @default(uuid()) @map("id_assinatura")
+  idEmpresa            String             @unique @map("id_empresa")
+  nomePlano            String             @default("Profissional") @map("nome_plano")
+  valorMensalCentavos  Int                @default(2999) @map("valor_mensal_centavos")
+  limiteUsuariosAtivos Int                @default(2) @map("limite_usuarios_ativos")
+  situacao             SituacaoAssinatura @default(ATIVA) @map("situacao")
+  gateway              String?            @map("gateway")
+  identificadorExterno String?            @map("identificador_externo")
+  dataVencimento       DateTime?          @map("data_vencimento")
+  dataCriacao          DateTime           @default(now()) @map("data_criacao")
+  dataAtualizacao      DateTime           @updatedAt @map("data_atualizacao")
+  empresa              Empresa            @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
+
+  @@map("assinatura")
+}
+
+model Orcamento {
+  idOrcamento      String            @id @default(uuid()) @map("id_orcamento")
+  idEmpresa        String            @map("id_empresa")
+  numero           Int               @map("numero")
+  situacao         SituacaoOrcamento @default(RASCUNHO) @map("situacao")
+  clienteNome      String            @map("cliente_nome")
+  clienteTelefone  String?           @map("cliente_telefone")
+  clienteEndereco  String?           @map("cliente_endereco")
+  clienteCidade    String?           @map("cliente_cidade")
+  clienteDocumento String?           @map("cliente_documento")
+  observacoes      String?           @map("observacoes")
+  validadeDias     Int?              @map("validade_dias")
+  descontoTipo     TipoDesconto      @default(FIXO) @map("desconto_tipo")
+  // FIXO: centavos; PERCENTUAL: pontos base (10000 representa 100%).
+  descontoValor    Int               @default(0) @map("desconto_valor")
+  subtotalCentavos Int               @default(0) @map("subtotal_centavos")
+  totalCentavos    Int               @default(0) @map("total_centavos")
+  dataCriacao      DateTime          @default(now()) @map("data_criacao")
+  dataAtualizacao  DateTime          @updatedAt @map("data_atualizacao")
+  empresa          Empresa           @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
+  itens            OrcamentoItem[]
+
+  @@unique([idEmpresa, numero])
+  @@unique([idEmpresa, idOrcamento])
+  @@index([idEmpresa, situacao, dataCriacao])
+  @@map("orcamento")
+}
+
+model OrcamentoItem {
+  idItem                String    @id @default(uuid()) @map("id_item")
+  idEmpresa             String    @map("id_empresa")
+  idOrcamento           String    @map("id_orcamento")
+  descricao             String    @map("descricao")
+  unidade               String    @default("un") @map("unidade")
+  quantidadeMilesimos   Int       @map("quantidade_milesimos")
+  valorUnitarioCentavos Int       @map("valor_unitario_centavos")
+  subtotalCentavos      Int       @map("subtotal_centavos")
+  ordem                 Int       @map("ordem")
+  orcamento             Orcamento @relation(fields: [idEmpresa, idOrcamento], references: [idEmpresa, idOrcamento], onDelete: Cascade)
+
+  @@index([idEmpresa, idOrcamento, ordem])
+  @@map("orcamento_item")
+}

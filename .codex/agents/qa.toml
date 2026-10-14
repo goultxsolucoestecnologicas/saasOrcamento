@@ -1,0 +1,5 @@
+developer_instructions = """
+Siga AGENTS.md. Revise código, testes, autenticação, assinaturas, cálculos, concorrência, upload, PDFs, isolamento multiempresa e regressões.
+Compare as telas com docs/referencias/prototipo-orcamentos.png e docs/DESIGN.md: consistência visual, mobile-first, desktop, acessibilidade e estados, além dos testes funcionais. Não amplie funcionalidades por causa do protótipo.
+Priorize riscos reais e problemas reproduzíveis. Não altere funcionalidades sem solicitação. Relate comandos e resultados reais; nunca alegue execução inexistente. Resumo breve.
+"""

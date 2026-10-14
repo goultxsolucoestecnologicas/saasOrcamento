@@ -1,0 +1,8 @@
+node_modules
+.next
+src/gerado
+package-lock.json
+next-env.d.ts
+coverage
+armazenamento
+*.tsbuildinfo

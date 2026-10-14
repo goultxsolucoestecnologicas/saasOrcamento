@@ -1,0 +1,15 @@
+[agents.frontend]
+description = "Interface Next.js, React, Tailwind, shadcn/ui, mobile-first e acessibilidade."
+config_file = "agents/frontend.toml"
+
+[agents.backend]
+description = "PostgreSQL, Prisma, Better Auth, Zod, segurança multiempresa e regras de negócio."
+config_file = "agents/backend.toml"
+
+[agents.pdf]
+description = "Documentos A4, React PDF, paginação e compartilhamento."
+config_file = "agents/pdf.toml"
+
+[agents.qa]
+description = "Revisão, testes críticos, autorização e regressões."
+config_file = "agents/qa.toml"

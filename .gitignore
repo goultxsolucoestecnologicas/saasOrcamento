@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+coverage/
+src/gerado/
+.env
+.env.*
+!.env.example
+armazenamento/
+uploads/
+*.log
+*.tsbuildinfo
+*.tmp
+.DS_Store
+Thumbs.db
+.tmp/
