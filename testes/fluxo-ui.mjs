@@ -52,7 +52,7 @@ try {
   ).json();
   assert.equal(
     empresa.dados.idEmpresa,
-    fixture.empresa,
+    fixture.idEmpresa,
     "Fluxo UI precisa usar schema isolado",
   );
   await pagina.waitForFunction(
@@ -197,7 +197,7 @@ try {
   await pagina.waitForURL("**/entrar");
   assert.equal(erros.length, 0, "Fluxo não deve lançar erros de página");
   console.log(
-    "Navegador validado: login/logout, formulário mobile, criação/edição, download, configurações, manifest e larguras 320/390/1440px.",
+    "Navegador validado: login/logout, formulário mobile, criação/edição, download, configurações, manifest e larguras 320/390/768/1024/1440px.",
   );
 } catch (erro) {
   await pagina

@@ -72,7 +72,7 @@ node --import tsx testes/api-integracao.mjs
 node testes/fluxo-ui.mjs
 ```
 
-A preparação guarda credenciais aleatórias somente em `.tmp`, ignorado. Testes posteriores conferem a impressão digital do alvo e schema antes de usar fixtures. Não criam novas contas Auth. Contas/schema são preservados; não há limpeza destrutiva. Scripts locais antigos exigem TEST_DATABASE_URL apontando localhost e não usam o banco remoto.
+A preparação guarda credenciais aleatórias somente em `.tmp`, ignorado. Testes posteriores conferem a impressão digital do alvo e schema antes de usar fixtures. Não criam novas contas Auth. Contas/schema são preservados; não há limpeza destrutiva. No ambiente preparado nesta sessão, acesso demonstrativo na porta3001 com credenciais fictícias em `.tmp/acesso-demonstracao.txt`; a porta3000 usa public e requer provisionamento próprio. Scripts locais antigos exigem TEST_DATABASE_URL apontando localhost e não usam o banco remoto.
 
 PDF: `node --import tsx testes/verificar-pdf.tsx` gera amostras fictícias para inspeção. Foram verificadas versões de1,7 e35páginas, cem itens e textos longos, com renderização/extracão. PWA armazena somente fallback offline e ícone; nenhuma página/API privada é cacheada. Instalação e compartilhamento nativo em aparelho físico ainda dependem de HTTPS e navegador compatível; fallback de download funciona no navegador desktop.
 
