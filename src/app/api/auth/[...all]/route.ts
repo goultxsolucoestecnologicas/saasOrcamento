@@ -1,12 +1,8 @@
-import { toNextJsHandler } from "better-auth/next-js";
-import { obterAutenticacao } from "@/bibliotecas/autenticacao";
-
 export const runtime = "nodejs";
-
-export async function GET(requisicao: Request) {
-  return toNextJsHandler(obterAutenticacao()).GET(requisicao);
+// Contratos legados não aceitam mais sessões do provedor anterior.
+export function GET() {
+  return new Response(null, { status: 410 });
 }
-
-export async function POST(requisicao: Request) {
-  return toNextJsHandler(obterAutenticacao()).POST(requisicao);
+export function POST() {
+  return new Response(null, { status: 410 });
 }

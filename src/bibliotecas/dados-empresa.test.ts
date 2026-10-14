@@ -57,4 +57,20 @@ describe("transação confiável da empresa", () => {
     });
     expect(operacao).not.toHaveBeenCalled();
   });
+
+  it("entrega apenas os delegates protegidos ao callback", async () => {
+    simulacoes.consultarUsuario.mockResolvedValue({
+      empresa: { ativa: true, assinatura: { situacao: "ATIVA" } },
+    });
+    await executarComDadosDaEmpresa(async (transacao) => {
+      expect(Object.keys(transacao)).toEqual([
+        "empresa",
+        "assinatura",
+        "orcamento",
+        "orcamentoItem",
+      ]);
+      expect("usuario" in transacao).toBe(false);
+      expect("$queryRaw" in transacao).toBe(false);
+    });
+  });
 });

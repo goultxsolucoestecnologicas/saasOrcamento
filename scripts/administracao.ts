@@ -1,7 +1,12 @@
 import { parseArgs } from "node:util";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { hashPassword } from "better-auth/crypto";
+import {
+  verificarIdentidadeSupabase,
+  type VerificarIdentidadeSupabase,
+} from "./admin-supabase";
+import { ErroAdministracao } from "./admin-erros";
+export { ErroAdministracao } from "./admin-erros";
 import type { Prisma, PrismaClient } from "../src/gerado/prisma/client";
 
 const id = z.uuid();
@@ -18,6 +23,7 @@ const esquemaComando = z.discriminatedUnion("comando", [
     .object({
       comando: z.literal("criar-usuario"),
       empresa: id,
+      "autenticacao-supabase": id,
       nome,
       email: z
         .email()
@@ -29,11 +35,16 @@ const esquemaComando = z.discriminatedUnion("comando", [
   z.object({ comando: z.literal("suspender-empresa"), empresa: id }).strict(),
   z.object({ comando: z.literal("ativar-usuario"), usuario: id }).strict(),
   z.object({ comando: z.literal("desativar-usuario"), usuario: id }).strict(),
+  z
+    .object({
+      comando: z.literal("vincular-usuario"),
+      usuario: id,
+      "autenticacao-supabase": id,
+    })
+    .strict(),
 ]);
 
 export type ComandoAdministrativo = z.infer<typeof esquemaComando>;
-
-export class ErroAdministracao extends Error {}
 
 export function interpretarArgumentos(
   argumentos: string[],
@@ -49,6 +60,7 @@ export function interpretarArgumentos(
         empresa: { type: "string" },
         usuario: { type: "string" },
         email: { type: "string" },
+        "autenticacao-supabase": { type: "string" },
       },
     });
     if (positionals.length !== 1) throw new Error();
@@ -84,7 +96,7 @@ async function validarVagaUsuario(
 export async function executarComandoAdministrativo(
   banco: PrismaClient,
   comando: ComandoAdministrativo,
-  senha?: string,
+  verificarIdentidade: VerificarIdentidadeSupabase = verificarIdentidadeSupabase,
 ): Promise<{ mensagem: string; id?: string }> {
   // Revalida também chamadas internas da biblioteca, sem confiar apenas no parser CLI.
   comando = esquemaComando.parse(comando);
@@ -102,12 +114,16 @@ export async function executarComandoAdministrativo(
     return { mensagem: "Empresa e assinatura criadas.", id: empresa.idEmpresa };
   }
   if (comando.comando === "criar-usuario") {
-    const senhaValidada = z.string().min(12).max(128).safeParse(senha);
-    if (!senhaValidada.success)
+    const identidade = await verificarIdentidade(
+      comando["autenticacao-supabase"],
+    );
+    if (
+      identidade.id !== comando["autenticacao-supabase"] ||
+      identidade.email.toLowerCase() !== comando.email
+    )
       throw new ErroAdministracao(
-        "A senha deve conter entre 12 e 128 caracteres.",
+        "O email informado não corresponde à identidade Supabase verificada.",
       );
-    const senhaHash = await hashPassword(senhaValidada.data);
     const idUsuario = randomUUID();
     await banco.$transaction(async (transacao) => {
       await travarEmpresa(transacao, comando.empresa);
@@ -118,18 +134,58 @@ export async function executarComandoAdministrativo(
           idEmpresa: comando.empresa,
           name: comando.nome,
           email: comando.email,
-          emailVerified: true,
-          contas: {
-            create: {
-              accountId: idUsuario,
-              providerId: "credential",
-              password: senhaHash,
-            },
-          },
+          emailVerified: identidade.emailVerificado,
+          idAutenticacaoSupabase: identidade.id,
         },
       });
     });
     return { mensagem: "Usuário criado.", id: idUsuario };
+  }
+  if (comando.comando === "vincular-usuario") {
+    const identidade = await verificarIdentidade(
+      comando["autenticacao-supabase"],
+    );
+    if (identidade.id !== comando["autenticacao-supabase"])
+      throw new ErroAdministracao(
+        "A identidade Supabase não corresponde ao UUID informado.",
+      );
+    await banco.$transaction(async (transacao) => {
+      const usuario = await transacao.usuario.findUnique({
+        where: { id: comando.usuario },
+        select: { idEmpresa: true },
+      });
+      if (!usuario) throw new ErroAdministracao("Usuário não encontrado.");
+      await travarEmpresa(transacao, usuario.idEmpresa);
+      const atual = await transacao.usuario.findUnique({
+        where: { id: comando.usuario, idEmpresa: usuario.idEmpresa },
+        select: { email: true, idAutenticacaoSupabase: true },
+      });
+      if (
+        !atual ||
+        atual.email.toLowerCase() !== identidade.email.toLowerCase()
+      )
+        throw new ErroAdministracao(
+          "O email do usuário local não corresponde à identidade Supabase verificada.",
+        );
+      if (
+        atual.idAutenticacaoSupabase &&
+        atual.idAutenticacaoSupabase !== identidade.id
+      )
+        throw new ErroAdministracao(
+          "O usuário já está vinculado a outra identidade Supabase.",
+        );
+      await transacao.usuario.update({
+        where: { id: comando.usuario, idEmpresa: usuario.idEmpresa },
+        data: {
+          idAutenticacaoSupabase: identidade.id,
+          emailVerified: identidade.emailVerificado,
+        },
+      });
+    });
+    return {
+      mensagem: "Identidade Supabase vinculada ao usuário existente.",
+      id: comando.usuario,
+    };
   }
   if (
     comando.comando === "ativar-empresa" ||

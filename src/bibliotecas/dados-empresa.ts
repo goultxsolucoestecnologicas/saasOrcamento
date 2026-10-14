@@ -1,5 +1,8 @@
 import "server-only";
-import type { Prisma } from "@/gerado/prisma/client";
+import {
+  criarEscopoEmpresa,
+  type TransacaoEmpresa,
+} from "@/bibliotecas/escopo-empresa";
 import { obterBanco } from "@/bibliotecas/banco";
 import {
   ErroAcessoEmpresa,
@@ -10,12 +13,12 @@ export type ContextoEmpresa = Readonly<{
   idEmpresa: string;
   idUsuario: string;
 }>;
+export type { TransacaoEmpresa } from "@/bibliotecas/escopo-empresa";
 
-// Somente serviços internos recebem a transação. O idEmpresa vem do contexto confiável,
-// nunca da entrada do navegador; cada consulta deve incluir este identificador.
+// Somente delegates de domínio com escopo automático são entregues aos serviços.
 export async function executarComDadosDaEmpresa<T>(
   operacao: (
-    transacao: Prisma.TransactionClient,
+    transacao: TransacaoEmpresa,
     contexto: ContextoEmpresa,
   ) => Promise<T>,
 ): Promise<T> {
@@ -40,7 +43,10 @@ export async function executarComDadosDaEmpresa<T>(
       ) {
         throw new ErroAcessoEmpresa(403);
       }
-      return operacao(transacao, contexto);
+      return operacao(
+        criarEscopoEmpresa(transacao, contexto.idEmpresa),
+        contexto,
+      );
     }),
   );
 }

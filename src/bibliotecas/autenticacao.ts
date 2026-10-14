@@ -1,70 +1,33 @@
 import "server-only";
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-import { APIError } from "better-auth/api";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { obterAmbiente } from "@/bibliotecas/ambiente";
-import { obterBanco } from "@/bibliotecas/banco";
 
-function criarAutenticacao() {
+export async function obterAutenticacao() {
+  const armazenamento = await cookies();
   const ambiente = obterAmbiente();
-
-  return betterAuth({
-    appName: "Orçamentos",
-    baseURL: ambiente.BETTER_AUTH_URL,
-    secret: ambiente.BETTER_AUTH_SECRET,
-    trustedOrigins: [ambiente.APP_URL],
-    database: prismaAdapter(obterBanco(), { provider: "postgresql" }),
-    emailAndPassword: { enabled: true, disableSignUp: true },
-    user: {
-      modelName: "usuario",
-      additionalFields: {
-        idEmpresa: { type: "string", required: true, input: false },
-        ativo: {
-          type: "boolean",
-          required: true,
-          defaultValue: true,
-          input: false,
+  return createServerClient(
+    ambiente.NEXT_PUBLIC_SUPABASE_URL,
+    ambiente.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    {
+      cookies: {
+        getAll: () => armazenamento.getAll(),
+        setAll: (valores) => {
+          // Server Components são somente leitura; o proxy persiste a renovação.
+          for (const { name, value, options } of valores) {
+            try {
+              armazenamento.set(name, value, options);
+            } catch {}
+          }
         },
       },
     },
-    session: { modelName: "sessao", cookieCache: { enabled: false } },
-    account: { modelName: "conta" },
-    verification: { modelName: "verificacao" },
-    databaseHooks: {
-      session: {
-        create: {
-          before: async (sessao) => {
-            const usuario = await obterBanco().usuario.findUnique({
-              where: { id: sessao.userId },
-              select: {
-                ativo: true,
-                empresa: {
-                  select: {
-                    ativa: true,
-                    assinatura: { select: { situacao: true } },
-                  },
-                },
-              },
-            });
-            if (
-              !usuario?.ativo ||
-              !usuario.empresa.ativa ||
-              usuario.empresa.assinatura?.situacao !== "ATIVA"
-            ) {
-              throw new APIError("FORBIDDEN", {
-                message: "Acesso à empresa indisponível.",
-              });
-            }
-          },
-        },
-      },
-    },
-  });
+  );
 }
 
-let autenticacao: ReturnType<typeof criarAutenticacao> | undefined;
-
-export function obterAutenticacao() {
-  autenticacao ??= criarAutenticacao();
-  return autenticacao;
+export async function obterIdentidadeVerificada(): Promise<string | null> {
+  const supabase = await obterAutenticacao();
+  // Verificação remota. Nunca autorizar por getSession ou user_metadata.
+  const { data, error } = await supabase.auth.getUser();
+  return error ? null : (data.user?.id ?? null);
 }

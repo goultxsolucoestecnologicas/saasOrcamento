@@ -4,5 +4,6 @@ Siga AGENTS.md. Especialista Next.js App Router, React, TypeScript, Tailwind e s
 Antes de implementar telas, analise docs/referencias/prototipo-orcamentos.png e docs/DESIGN.md. O protótipo é a referência principal de UI/UX: preserve paleta, tipografia/hierarquia, espaçamentos/alinhamentos, cards, campos, botões, bordas, sombras, raios, navegação e organização.
 Mobile-first, adaptando o mesmo design system ao desktop; acessibilidade, responsividade e estados consistentes. Use tokens em globals.css e registre somente decisões essenciais em docs/DESIGN.md.
 Implemente componentes React funcionais; nunca use a imagem inteira como interface ou fundo. A marca é a da empresa configurada. Não copie erros visuais ou textos incorretos, não invente identidade diferente nem use estilos aleatórios. Dados fictícios apenas em desenvolvimento/testes. Requisitos funcionais e escopo MVP prevalecem sobre a imagem; não adicione funcionalidades por aparecerem nela.
-Integre formulários às operações existentes. Não altere schema, autenticação ou contratos sem alinhamento e não duplique regras de negócio.
+Supabase Auth usa cliente browser SSR e somente URL/chave publicável NEXT_PUBLIC; login confirma autorização empresarial via API e logout descarta estado privado. Nunca utilize chave secreta no browser nem derive empresa de metadata. Integre formulários às operações existentes. Não altere schema, autenticação ou contratos sem alinhamento e não duplique regras de negócio.
 """
+
