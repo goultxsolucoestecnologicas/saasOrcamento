@@ -3,18 +3,22 @@
 ## Nomenclatura
 
 - Domínio em português brasileiro: tabelas/colunas snake_case, modelos Prisma e tipos PascalCase, funções/variáveis camelCase, arquivos kebab-case descritivos.
-- Use @map/@@map no Prisma. Preserve APIs externas, contratos Better Auth e arquivos obrigatórios do Next.js.
+- Use @map/@@map no Prisma. Preserve APIs externas, contratos legados e Supabase Auth e arquivos obrigatórios do Next.js.
 
 ## Arquitetura e segurança
 
-- Next.js App Router com backend integrado, PostgreSQL local, Prisma, Better Auth, Zod. Sem Docker, backend separado ou infraestrutura paga nesta fase.
+- Next.js App Router com backend integrado, PostgreSQL Supabase, Prisma 7, Supabase Auth, Zod. Sem Docker, backend separado ou deploy nesta fase.
 - Regras de negócio fora dos componentes. Clean Code, SOLID quando útil, DRY, KISS, YAGNI, tipagem forte, validação no servidor e erros explícitos.
 - Dados sempre isolados por empresa. Toda operação de domínio deve entrar por executarNaEmpresa; filtre leituras/alterações/exclusões por idEmpresa do contexto e atribua esse id nas criações. Nunca use idEmpresa do navegador para autorização.
-- Importe obterBanco apenas na infraestrutura, autenticação e módulos de servidor que executem dentro desse contexto. Ao adicionar cada módulo, centralize suas consultas com escopo obrigatório e teste ataques entre empresas. O contexto inicial não filtra consultas Prisma automaticamente.
-- Cada usuário pertence a uma empresa; todos têm permissões iguais. A T02 implementará o limite de dois ativos em transação com controle de concorrência, inclusive no provisionamento manual. Não crie endpoints de cadastro público.
+- Importe obterBanco apenas na infraestrutura, autenticação e módulos de servidor que executem dentro desse contexto. Ao adicionar cada módulo, centralize suas consultas com escopo obrigatório e teste ataques entre empresas. O gateway executarComDadosDaEmpresa injeta escopo em todos os delegates de domínio; não exponha Prisma bruto aos serviços.
+- Cada usuário pertence a uma empresa; todos têm permissões iguais. Preserve o limite de dois ativos em transação com controle de concorrência, inclusive no provisionamento manual. Não crie endpoints de cadastro público.
 - Empresa é unidade de cobrança; assinaturas separadas de usuários e gateways. Plano futuro Profissional: 2999 centavos/mês, dois usuários ativos. Sem integração de pagamento nesta etapa.
-- Dinheiro em centavos inteiros. Transações para invariantes concorrentes e numeração futura.
-- Logos em diretório persistente configurável fora de public e do código versionado. Upload futuro valida tipo/tamanho e acesso por empresa; sem caminhos locais fixos.
+- Dinheiro em centavos inteiros. Transações para invariantes concorrentes e numeração por empresa.
+- Logos em diretório persistente configurável fora de public e do código versionado. Upload valida tipo/tamanho e acesso por empresa; sem caminhos locais fixos.
+
+- Prisma runtime usa DATABASE_URL; migrations usam DIRECT_URL. Confirme desenvolvimento antes de DDL remoto. Nunca execute reset/drop ou migre produção automaticamente.
+- Supabase Auth verifica getUser no servidor; empresa vem do vínculo idAutenticacaoSupabase no banco. RLS sem policies bloqueia Data API anon/authenticated; Prisma aplica autorização própria. Não vincule por email/metadata do navegador nem migre senhas legadas automaticamente.
+- SUPABASE_SECRET_KEY é exclusiva do CLI administrativo. Não criar contas Auth externas/fixtures remotas sem autorização específica.
 
 ## Trabalho e validação
 
@@ -42,7 +46,7 @@
 
 ## Execução autônoma do MVP
 
-- T02–T10 autorizadas conforme `docs/BACKLOG.md`: assinaturas manuais, autenticação, provisionamento, layout/PWA, CRUD/cálculos, configurações/logo, PDF/compartilhamento, integração e entrega local. Sem gateway, landing comercial, dashboards, Docker, nuvem ou deploy.
+- T02–T10 autorizadas conforme `docs/BACKLOG.md`: assinaturas manuais, autenticação, provisionamento, layout/PWA, CRUD/cálculos, configurações/logo, PDF/compartilhamento, integração e entrega local. Sem gateway, landing comercial, dashboards, Docker ou deploy. Supabase Auth/PostgreSQL foram autorizados posteriormente.
 - Para cada tarefa: definir dependências/aceite, branch de base validada (derivada quando dependente), implementar, verificar, revisar/corrigir com QA, commit e PR quando remoto autorizado disponível. Não marque concluído sem aceite e base utilizável pelas próximas tarefas.
 - Estados persistentes: PENDENTE, EM_ANDAMENTO, EM_REVISAO, CONCLUIDA, BLOQUEADA. Preserve o trabalho válido; não recrie arquitetura. Não execute migrations destrutivas nem altere dados reais sem autorização.
 - Prossiga sem confirmação individual. Solicite intervenção apenas para credenciais/autorização ausentes, decisão impossível de inferir, operação destrutiva, risco significativo, mudança de escopo ou bloqueio irremediável. Nunca exponha segredos nem banco pessoal à internet.

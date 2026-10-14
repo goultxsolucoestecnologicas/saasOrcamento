@@ -1,6 +1,5 @@
 import "server-only";
-import { headers } from "next/headers";
-import { obterAutenticacao } from "@/bibliotecas/autenticacao";
+import { obterIdentidadeVerificada } from "@/bibliotecas/autenticacao";
 import { obterBanco } from "@/bibliotecas/banco";
 
 export class ErroAcessoEmpresa extends Error {
@@ -19,14 +18,11 @@ export async function executarNaEmpresa<T>(
     contexto: Readonly<{ idEmpresa: string; idUsuario: string }>,
   ) => Promise<T>,
 ): Promise<T> {
-  const sessao = await obterAutenticacao().api.getSession({
-    headers: await headers(),
-    query: { disableCookieCache: true },
-  });
-  if (!sessao) throw new ErroAcessoEmpresa(401);
+  const idAutenticacaoSupabase = await obterIdentidadeVerificada();
+  if (!idAutenticacaoSupabase) throw new ErroAcessoEmpresa(401);
 
   const usuario = await obterBanco().usuario.findUnique({
-    where: { id: sessao.user.id },
+    where: { idAutenticacaoSupabase },
     select: {
       id: true,
       idEmpresa: true,

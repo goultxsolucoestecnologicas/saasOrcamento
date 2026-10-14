@@ -1,16 +1,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { verifyPassword } from "better-auth/crypto";
 import type { PrismaClient } from "../src/gerado/prisma/client";
 import {
   executarComandoAdministrativo,
   interpretarArgumentos,
   mensagemErroAdministrativo,
 } from "./administracao";
+import type { IdentidadeSupabase } from "./admin-supabase";
 
 const idEmpresa = "6e531a29-ef50-46a2-88bb-55904df9c763";
 const idUsuario = "c330fc37-c2e1-4052-8510-8cad0c0c40cb";
-
+const idAutenticacao = "c43b4b6c-89a1-4584-9fde-21ebfe03184f";
+const identidade: IdentidadeSupabase = {
+  id: idAutenticacao,
+  email: "ana@example.com",
+  emailVerificado: true,
+};
+const criarUsuario = {
+  comando: "criar-usuario" as const,
+  empresa: idEmpresa,
+  nome: "Ana",
+  email: "ana@example.com",
+  "autenticacao-supabase": idAutenticacao,
+};
+const confirmarIdentidade = async () => identidade;
 function simularBanco(transacao: object): PrismaClient {
   return {
     $transaction: async (operacao: (valor: object) => Promise<unknown>) =>
@@ -18,21 +31,29 @@ function simularBanco(transacao: object): PrismaClient {
   } as unknown as PrismaClient;
 }
 
-test("parser rejeita senha em argv e identifica opções inadequadas", () => {
+test("parser exige UUID Supabase e não aceita senha em argumentos", () => {
   assert.throws(() =>
     interpretarArgumentos(["criar-usuario", "--senha", "nunca-expor"]),
   );
   assert.throws(() =>
     interpretarArgumentos([
-      "suspender-empresa",
+      "criar-usuario",
       "--empresa",
       idEmpresa,
       "--nome",
-      "indevido",
+      "Ana",
+      "--email",
+      "ana@example.com",
     ]),
   );
   assert.throws(() =>
-    interpretarArgumentos(["ativar-empresa", "--empresa", "id-invalido"]),
+    interpretarArgumentos([
+      "vincular-usuario",
+      "--usuario",
+      idUsuario,
+      "--autenticacao-supabase",
+      "invalido",
+    ]),
   );
   assert.deepEqual(
     interpretarArgumentos([
@@ -43,17 +64,37 @@ test("parser rejeita senha em argv e identifica opções inadequadas", () => {
       "Ana",
       "--email",
       "ANA@EXAMPLE.COM",
+      "--autenticacao-supabase",
+      idAutenticacao,
+    ]),
+    criarUsuario,
+  );
+  assert.deepEqual(
+    interpretarArgumentos([
+      "vincular-usuario",
+      "--usuario",
+      idUsuario,
+      "--autenticacao-supabase",
+      idAutenticacao,
     ]),
     {
-      comando: "criar-usuario",
-      empresa: idEmpresa,
-      nome: "Ana",
-      email: "ana@example.com",
+      comando: "vincular-usuario",
+      usuario: idUsuario,
+      "autenticacao-supabase": idAutenticacao,
     },
+  );
+  assert.throws(() =>
+    interpretarArgumentos([
+      "suspender-empresa",
+      "--empresa",
+      idEmpresa,
+      "--nome",
+      "indevido",
+    ]),
   );
 });
 
-test("criação de empresa inclui assinatura na mesma escrita transacional", async () => {
+test("empresa e assinatura são criadas na mesma transação", async () => {
   let entrada: unknown;
   const banco = simularBanco({
     empresa: {
@@ -78,17 +119,9 @@ test("criação de empresa inclui assinatura na mesma escrita transacional", asy
   });
 });
 
-test("provisionamento trava empresa antes da contagem e armazena hash Better Auth", async () => {
+test("confirma identidade antes de travar e contar; não cria contas ou senhas legadas", async () => {
   const ordem: string[] = [];
-  let dadosUsuario:
-    | {
-        id: string;
-        idEmpresa: string;
-        contas: {
-          create: { accountId: string; providerId: string; password: string };
-        };
-      }
-    | undefined;
+  let dadosUsuario: Record<string, unknown> | undefined;
   const banco = simularBanco({
     empresa: {
       update: async () => {
@@ -100,40 +133,52 @@ test("provisionamento trava empresa antes da contagem e armazena hash Better Aut
         ordem.push("contar");
         return 1;
       },
-      create: async ({ data }: { data: NonNullable<typeof dadosUsuario> }) => {
+      create: async ({ data }: { data: Record<string, unknown> }) => {
         ordem.push("criar");
         dadosUsuario = data;
       },
     },
   });
-  const senha = "Senha-local-segura-123";
   const resultado = await executarComandoAdministrativo(
     banco,
-    {
-      comando: "criar-usuario",
-      empresa: idEmpresa,
-      nome: "Ana",
-      email: "ana@example.com",
+    criarUsuario,
+    async (id) => {
+      assert.equal(id, idAutenticacao);
+      ordem.push("verificar");
+      return identidade;
     },
-    senha,
   );
-  assert.deepEqual(ordem, ["travar", "contar", "criar"]);
+  assert.deepEqual(ordem, ["verificar", "travar", "contar", "criar"]);
   assert.ok(dadosUsuario);
   assert.equal(dadosUsuario.idEmpresa, idEmpresa);
-  assert.equal(dadosUsuario.contas.create.providerId, "credential");
-  assert.equal(dadosUsuario.contas.create.accountId, dadosUsuario.id);
-  assert.notEqual(dadosUsuario.contas.create.password, senha);
-  assert.equal(
-    await verifyPassword({
-      hash: dadosUsuario.contas.create.password,
-      password: senha,
-    }),
-    true,
-  );
-  assert.equal(JSON.stringify(resultado).includes(senha), false);
+  assert.equal(dadosUsuario.idAutenticacaoSupabase, idAutenticacao);
+  assert.equal(dadosUsuario.emailVerified, true);
+  assert.notEqual(dadosUsuario.id, idAutenticacao);
+  assert.equal("contas" in dadosUsuario, false);
+  assert.equal("password" in dadosUsuario, false);
+  assert.equal(resultado.id, dadosUsuario.id);
 });
 
-test("terceiro usuário ativo é recusado antes da criação", async () => {
+test("email ou ID remoto divergente não permite escrita local", async () => {
+  await assert.rejects(
+    executarComandoAdministrativo(
+      {} as PrismaClient,
+      criarUsuario,
+      async () => ({ ...identidade, email: "outra@example.com" }),
+    ),
+    /não corresponde/,
+  );
+  await assert.rejects(
+    executarComandoAdministrativo(
+      {} as PrismaClient,
+      criarUsuario,
+      async () => ({ ...identidade, id: idUsuario }),
+    ),
+    /não corresponde/,
+  );
+});
+
+test("terceiro usuário ativo continua recusado", async () => {
   let criou = false;
   const banco = simularBanco({
     empresa: { update: async () => undefined },
@@ -145,27 +190,77 @@ test("terceiro usuário ativo é recusado antes da criação", async () => {
     },
   });
   await assert.rejects(
-    executarComandoAdministrativo(
-      banco,
-      {
-        comando: "criar-usuario",
-        empresa: idEmpresa,
-        nome: "Ana",
-        email: "ana@example.com",
-      },
-      "Senha-local-segura-123",
-    ),
+    executarComandoAdministrativo(banco, criarUsuario, confirmarIdentidade),
     /dois usuários ativos/,
   );
   assert.equal(criou, false);
 });
 
-test("ativação idempotente não exige vaga adicional", async () => {
-  let contou = false;
+test("vincula identidade sem mudar ID local, empresa ou email legado", async () => {
+  let escrita: unknown;
   const banco = simularBanco({
     empresa: { update: async () => undefined },
     usuario: {
-      findUnique: async () => ({ idEmpresa, ativo: true }),
+      findUnique: async () => ({
+        idEmpresa,
+        email: "ANA@example.com",
+        idAutenticacaoSupabase: null,
+      }),
+      update: async (dados: unknown) => {
+        escrita = dados;
+      },
+    },
+  });
+  const resultado = await executarComandoAdministrativo(
+    banco,
+    {
+      comando: "vincular-usuario",
+      usuario: idUsuario,
+      "autenticacao-supabase": idAutenticacao,
+    },
+    confirmarIdentidade,
+  );
+  assert.equal(resultado.id, idUsuario);
+  assert.deepEqual(escrita, {
+    where: { id: idUsuario, idEmpresa },
+    data: { idAutenticacaoSupabase: idAutenticacao, emailVerified: true },
+  });
+});
+
+test("não vincula identidade com email diferente nem substitui vínculo anterior", async () => {
+  const comando = {
+    comando: "vincular-usuario" as const,
+    usuario: idUsuario,
+    "autenticacao-supabase": idAutenticacao,
+  };
+  let atualizou = false;
+  for (const dados of [
+    { email: "outra@example.com", idAutenticacaoSupabase: null },
+    { email: identidade.email, idAutenticacaoSupabase: idUsuario },
+  ]) {
+    const banco = simularBanco({
+      empresa: { update: async () => undefined },
+      usuario: {
+        findUnique: async () => ({ idEmpresa, ...dados }),
+        update: async () => {
+          atualizou = true;
+        },
+      },
+    });
+    await assert.rejects(
+      executarComandoAdministrativo(banco, comando, confirmarIdentidade),
+    );
+  }
+  assert.equal(atualizou, false);
+});
+
+test("ativação idempotente não exige vaga adicional e reativação respeita limite", async () => {
+  let contou = false;
+  let ativo = true;
+  const banco = simularBanco({
+    empresa: { update: async () => undefined },
+    usuario: {
+      findUnique: async () => ({ idEmpresa, ativo }),
       count: async () => {
         contou = true;
         return 2;
@@ -178,20 +273,7 @@ test("ativação idempotente não exige vaga adicional", async () => {
     usuario: idUsuario,
   });
   assert.equal(contou, false);
-});
-
-test("reativação respeita limite e não atualiza quando lotada", async () => {
-  let atualizou = false;
-  const banco = simularBanco({
-    empresa: { update: async () => undefined },
-    usuario: {
-      findUnique: async () => ({ idEmpresa, ativo: false }),
-      count: async () => 2,
-      update: async () => {
-        atualizou = true;
-      },
-    },
-  });
+  ativo = false;
   await assert.rejects(
     executarComandoAdministrativo(banco, {
       comando: "ativar-usuario",
@@ -199,10 +281,9 @@ test("reativação respeita limite e não atualiza quando lotada", async () => {
     }),
     /dois usuários ativos/,
   );
-  assert.equal(atualizou, false);
 });
 
-test("suspensão atualiza empresa e assinatura e revoga sessões", async () => {
+test("suspensão mantém empresa e assinatura sincronizadas e revoga sessões legadas", async () => {
   const escritas: unknown[] = [];
   const banco = simularBanco({
     empresa: { update: async (valor: unknown) => escritas.push(valor) },
@@ -220,23 +301,7 @@ test("suspensão atualiza empresa e assinatura e revoga sessões", async () => {
   ]);
 });
 
-test("senha inválida é recusada sem realizar consultas", async () => {
-  await assert.rejects(
-    executarComandoAdministrativo(
-      {} as PrismaClient,
-      {
-        comando: "criar-usuario",
-        empresa: idEmpresa,
-        nome: "Ana",
-        email: "ana@example.com",
-      },
-      "curta",
-    ),
-    /12 e 128/,
-  );
-});
-
-test("erros externos são sanitizados e unicidade tem mensagem própria", () => {
+test("erros externos são sanitizados e unicidade permanece tratada", () => {
   assert.equal(
     mensagemErroAdministrativo({
       code: "P2002",

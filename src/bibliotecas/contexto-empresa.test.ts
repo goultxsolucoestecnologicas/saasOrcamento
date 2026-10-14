@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const simulacoes = vi.hoisted(() => ({ sessao: vi.fn(), usuario: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/bibliotecas/autenticacao", () => ({
-  obterAutenticacao: () => ({ api: { getSession: simulacoes.sessao } }),
+  obterIdentidadeVerificada: simulacoes.sessao,
 }));
 vi.mock("@/bibliotecas/banco", () => ({
   obterBanco: () => ({ usuario: { findUnique: simulacoes.usuario } }),
@@ -33,7 +33,7 @@ describe("contexto confiável da empresa", () => {
   ])(
     "recusa usuário inexistente, inativo ou empresa suspensa",
     async (usuario) => {
-      simulacoes.sessao.mockResolvedValue({ user: { id: "usuario-a" } });
+      simulacoes.sessao.mockResolvedValue("auth-a");
       simulacoes.usuario.mockResolvedValue(usuario);
       const operacao = vi.fn();
       await expect(executarNaEmpresa(operacao)).rejects.toMatchObject({
@@ -43,9 +43,7 @@ describe("contexto confiável da empresa", () => {
     },
   );
   it("usa a empresa atual do banco mesmo com outra empresa na sessão", async () => {
-    simulacoes.sessao.mockResolvedValue({
-      user: { id: "usuario-a", idEmpresa: "empresa-forjada" },
-    });
+    simulacoes.sessao.mockResolvedValue("auth-a");
     simulacoes.usuario.mockResolvedValue({
       id: "usuario-a",
       idEmpresa: "empresa-a",
@@ -58,15 +56,13 @@ describe("contexto confiável da empresa", () => {
       idEmpresa: "empresa-a",
     });
     expect(Object.isFrozen(contexto)).toBe(true);
-    expect(simulacoes.sessao).toHaveBeenCalledWith(
-      expect.objectContaining({ query: { disableCookieCache: true } }),
-    );
+    expect(simulacoes.sessao).toHaveBeenCalled();
     expect(simulacoes.usuario).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "usuario-a" } }),
+      expect.objectContaining({ where: { idAutenticacaoSupabase: "auth-a" } }),
     );
   });
   it("recusa assinatura revogada depois de uma sessão válida", async () => {
-    simulacoes.sessao.mockResolvedValue({ user: { id: "usuario-a" } });
+    simulacoes.sessao.mockResolvedValue("auth-a");
     simulacoes.usuario.mockResolvedValueOnce({
       id: "usuario-a",
       idEmpresa: "empresa-a",

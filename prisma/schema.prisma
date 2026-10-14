@@ -25,18 +25,19 @@ model Empresa {
 
 // Nomes internos preservam o contrato do Better Auth; colunas físicas são em português.
 model Usuario {
-  id            String   @id @default(uuid()) @map("id_usuario")
-  name          String   @map("nome")
-  email         String   @unique @map("email")
-  emailVerified Boolean  @default(false) @map("email_verificado")
-  image         String?  @map("imagem")
-  createdAt     DateTime @default(now()) @map("data_criacao")
-  updatedAt     DateTime @updatedAt @map("data_atualizacao")
-  idEmpresa     String   @map("id_empresa")
-  ativo         Boolean  @default(true) @map("ativo")
-  empresa       Empresa  @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
-  sessoes       Sessao[]
-  contas        Conta[]
+  id                     String   @id @default(uuid()) @map("id_usuario")
+  idAutenticacaoSupabase String?  @unique @map("id_autenticacao_supabase") @db.Uuid
+  name                   String   @map("nome")
+  email                  String   @unique @map("email")
+  emailVerified          Boolean  @default(false) @map("email_verificado")
+  image                  String?  @map("imagem")
+  createdAt              DateTime @default(now()) @map("data_criacao")
+  updatedAt              DateTime @updatedAt @map("data_atualizacao")
+  idEmpresa              String   @map("id_empresa")
+  ativo                  Boolean  @default(true) @map("ativo")
+  empresa                Empresa  @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
+  sessoes                Sessao[]
+  contas                 Conta[]
 
   @@index([idEmpresa, ativo])
   @@map("usuario")

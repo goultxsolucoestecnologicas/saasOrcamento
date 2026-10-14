@@ -14,6 +14,7 @@ export default defineConfig([
       "src/bibliotecas/autenticacao.ts",
       "src/bibliotecas/contexto-empresa.ts",
       "src/bibliotecas/dados-empresa.ts",
+      "src/bibliotecas/escopo-empresa.ts",
       "src/**/*.test.ts",
     ],
     rules: {
@@ -37,5 +38,16 @@ export default defineConfig([
       ],
     },
   },
-  globalIgnores([".next/**", "src/gerado/**", "next-env.d.ts", "coverage/**"]),
+  // Componentes React PDF representam nós PDF, não elementos HTML acessíveis.
+  {
+    files: ["src/funcionalidades/pdf/**/*.tsx"],
+    rules: { "jsx-a11y/alt-text": "off" },
+  },
+  globalIgnores([
+    ".tmp/**",
+    ".next/**",
+    "src/gerado/**",
+    "next-env.d.ts",
+    "coverage/**",
+  ]),
 ]);
