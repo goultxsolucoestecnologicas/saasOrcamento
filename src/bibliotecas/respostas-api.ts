@@ -11,7 +11,12 @@ export const cabecalhosPrivados = {
 export function responderErroApi(erro: unknown): Response {
   if (erro instanceof ErroAcessoEmpresa || erro instanceof ErroDominio)
     return Response.json(
-      { erro: erro.message },
+      {
+        erro: erro.message,
+        ...(erro instanceof ErroDominio && erro.campos?.length
+          ? { campos: erro.campos }
+          : {}),
+      },
       { status: erro.status, headers: cabecalhosPrivados },
     );
   return Response.json(

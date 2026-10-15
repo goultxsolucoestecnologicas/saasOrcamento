@@ -23,7 +23,7 @@ Preencha `.env` local, nunca versionado:
 - `ARMAZENAMENTO_LOCAL_DIRETORIO`: diretório privado persistente fora de public, normalmente `./armazenamento`.
 - `SUPABASE_SECRET_KEY`: exclusiva do CLI administrativo; alternativa legada `SUPABASE_SERVICE_ROLE_KEY`. Nunca prefixar com NEXT_PUBLIC nem enviar pelo chat.
 
-`npm run db:deploy -- --desenvolvimento-confirmado` aplica migrations existentes e gera o cliente. A opção afirma que o alvo foi conferido como desenvolvimento. Não use automaticamente em produção. Não usamos migrate reset, db push ou migrations destrutivas. Para criar migrations novas, use um PostgreSQL local dedicado com banco shadow; revise SQL antes de aplicar no Supabase.
+pm run db:deploy -- --desenvolvimento-confirmado` aplica migrations existentes e gera o cliente. A opção afirma que o alvo foi conferido como desenvolvimento. Não use automaticamente em produção. Não usamos migrate reset, db push ou migrations destrutivas. Para criar migrations novas, use um PostgreSQL local dedicado com banco shadow; revise SQL antes de aplicar no Supabase.
 
 Acesse [localhost:3000](http://localhost:3000). Variáveis NEXT_PUBLIC são incorporadas ao bundle: reinicie o servidor/recompile ao alterá-las.
 
@@ -74,7 +74,8 @@ node testes/fluxo-ui.mjs
 
 A preparação guarda credenciais aleatórias somente em `.tmp`, ignorado. Testes posteriores conferem a impressão digital do alvo e schema antes de usar fixtures. Não criam novas contas Auth. Contas/schema são preservados; não há limpeza destrutiva. No ambiente preparado nesta sessão, acesso demonstrativo na porta3001 com credenciais fictícias em `.tmp/acesso-demonstracao.txt`; a porta3000 usa public e requer provisionamento próprio. Scripts locais antigos exigem TEST_DATABASE_URL apontando localhost e não usam o banco remoto.
 
-PDF: `node --import tsx testes/verificar-pdf.tsx` gera amostras fictícias para inspeção. Foram verificadas versões de1,7 e35páginas, cem itens e textos longos, com renderização/extracão. PWA armazena somente fallback offline e ícone; nenhuma página/API privada é cacheada. Instalação e compartilhamento nativo em aparelho físico ainda dependem de HTTPS e navegador compatível; fallback de download funciona no navegador desktop.
+PDF:
+ode --import tsx testes/verificar-pdf.tsx` gera amostras fictícias para inspeção. Foram verificadas versões de1,7 e35páginas, cem itens e textos longos, com renderização/extracão. PWA armazena somente fallback offline e ícone; nenhuma página/API privada é cacheada. Instalação e compartilhamento nativo em aparelho físico ainda dependem de HTTPS e navegador compatível; fallback de download funciona no navegador desktop.
 
 ## Operação
 
@@ -83,3 +84,8 @@ Logos PNG/JPEG até2MB, normalizados e servidos por rota privada por empresa. Pr
 Configurações de agentes em `.codex/agents` e regras em `AGENTS.md`; decisões visuais em `docs/DESIGN.md`, estado das tarefas em `docs/BACKLOG.md`. PRs são autorizados; nenhuma integração automática em main.
 
 O npm audit ainda indica oito alertas altos transitivos na cadeia de ferramentas Next/Prisma. Não aplicamos audit fix --force nem upgrades incompatíveis.
+
+## Interface e experiência
+
+Auditoria, decisões, testes e capturas reais mobile/desktop do redesign estão em [docs/ui/README.md](docs/ui/README.md). Para a verificação automatizada das telas, execute
+pm run test:ui` com o servidor de fixtures na porta3001.

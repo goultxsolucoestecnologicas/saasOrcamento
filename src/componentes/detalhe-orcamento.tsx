@@ -1,8 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Download, Share2, Pencil, Trash2, FileText } from "lucide-react";
+import {
+  ErrorAlertDialog,
+  ConfirmActionDialog,
+  PageSkeleton,
+  EstadoErro,
+  PageHeader,
+} from "@/componentes/feedback";
 import { Button } from "@/componentes/ui/button";
 import { OrcamentoUi, reais, requisitar } from "@/bibliotecas/api-cliente";
 export function DetalheOrcamento({
@@ -15,15 +22,32 @@ export function DetalheOrcamento({
   const router = useRouter();
   const [orcamento, setOrcamento] = useState<OrcamentoUi>();
   const [erro, setErro] = useState("");
+  const [cargaErro, setCargaErro] = useState("");
+  const [carregando, setCarregando] = useState(true);
+  const [tentativa, setTentativa] = useState(0);
+  const trava = useRef(false);
   const [ocupado, setOcupado] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [prever, setPrever] = useState(mostrarPdf);
   useEffect(() => {
+    let ativo = true;
     requisitar<OrcamentoUi>(`/api/orcamentos/${id}`)
-      .then(setOrcamento)
-      .catch((e) => setErro(e.message));
-  }, [id]);
+      .then((o) => {
+        if (ativo) setOrcamento(o);
+      })
+      .catch((e) => {
+        if (ativo) setCargaErro(e.message);
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [id, tentativa]);
   async function baixar(compartilhar: boolean) {
+    if (trava.current) return;
+    trava.current = true;
     setOcupado(true);
     setErro("");
     try {
@@ -63,24 +87,44 @@ export function DetalheOrcamento({
       if (!(e instanceof DOMException && e.name === "AbortError"))
         setErro(e instanceof Error ? e.message : "Falha ao gerar PDF.");
     } finally {
+      trava.current = false;
       setOcupado(false);
     }
   }
   return (
     <>
-      {erro && (
-        <p className="erro" role="alert">
-          {erro}
-        </p>
-      )}
-      {!orcamento ? (
-        <p role="status">Carregando orçamento…</p>
-      ) : (
+      <ErrorAlertDialog
+        aberto={!!erro}
+        titulo="Não foi possível concluir a operação"
+        mensagem={erro}
+        aoFechar={() => setErro("")}
+      />
+      {carregando ? (
+        <PageSkeleton />
+      ) : cargaErro ? (
+        <EstadoErro
+          mensagem={cargaErro}
+          tentarNovamente={() => {
+            setCarregando(true);
+            setCargaErro("");
+            setTentativa((v) => v + 1);
+          }}
+        />
+      ) : orcamento ? (
         <>
-          <header className="cabecalho">
-            <h1>Orçamento #{String(orcamento.numero).padStart(5, "0")}</h1>
-            <span className="status">{orcamento.situacao.toLowerCase()}</span>
-          </header>
+          <PageHeader
+            titulo={`Orçamento #${String(orcamento.numero).padStart(5, "0")}`}
+          >
+            <span className="status">
+              {{
+                RASCUNHO: "Rascunho",
+                ENVIADO: "Enviado",
+                APROVADO: "Aprovado",
+                RECUSADO: "Recusado",
+                CANCELADO: "Cancelado",
+              }[orcamento.situacao] || orcamento.situacao}
+            </span>
+          </PageHeader>
           <div className="formulario-grade">
             <section className="painel">
               <h2>Resumo do orçamento</h2>
@@ -104,6 +148,20 @@ export function DetalheOrcamento({
                   <strong>{reais(i.subtotalCentavos || 0)}</strong>
                 </div>
               ))}
+              <div className="linha-resumo">
+                <span>Subtotal</span>
+                <strong>{reais(orcamento.subtotalCentavos)}</strong>
+              </div>
+              {orcamento.subtotalCentavos !== orcamento.totalCentavos && (
+                <div className="linha-resumo">
+                  <span>Desconto</span>
+                  <strong>
+                    {reais(
+                      orcamento.subtotalCentavos - orcamento.totalCentavos,
+                    )}
+                  </strong>
+                </div>
+              )}
               <div className="total">
                 <span>Total do orçamento</span>
                 <strong>{reais(orcamento.totalCentavos)}</strong>
@@ -131,45 +189,34 @@ export function DetalheOrcamento({
                   Excluir
                 </Button>
               </div>
-              {confirmando && (
-                <div className="confirmacao" role="alert">
-                  <p>
-                    Excluir este orçamento? Esta ação não pode ser desfeita.
-                  </p>
-                  <div className="acoes">
-                    <Button
-                      variant="outline"
-                      disabled={ocupado}
-                      onClick={() => setConfirmando(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      disabled={ocupado}
-                      onClick={async () => {
-                        setOcupado(true);
-                        try {
-                          await requisitar(`/api/orcamentos/${id}`, {
-                            method: "DELETE",
-                          });
-                          router.push("/orcamentos");
-                        } catch (e) {
-                          setErro(
-                            e instanceof Error
-                              ? e.message
-                              : "Falha ao excluir.",
-                          );
-                        } finally {
-                          setOcupado(false);
-                        }
-                      }}
-                    >
-                      Confirmar exclusão
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <ConfirmActionDialog
+                aberto={confirmando}
+                titulo="Excluir orçamento?"
+                mensagem="Esta ação não pode ser desfeita. Confirme somente se não precisar mais deste orçamento."
+                ocupado={ocupado}
+                aoCancelar={() => setConfirmando(false)}
+                aoConfirmar={async () => {
+                  if (trava.current) return;
+                  trava.current = true;
+                  setOcupado(true);
+                  try {
+                    await requisitar(`/api/orcamentos/${id}`, {
+                      method: "DELETE",
+                    });
+                    router.push("/orcamentos");
+                  } catch (e) {
+                    setConfirmando(false);
+                    setErro(
+                      e instanceof Error
+                        ? e.message
+                        : "Não foi possível excluir o orçamento.",
+                    );
+                  } finally {
+                    trava.current = false;
+                    setOcupado(false);
+                  }
+                }}
+              />
             </section>
             <section className="painel">
               <h2>Documento PDF</h2>
@@ -204,7 +251,7 @@ export function DetalheOrcamento({
             </section>
           </div>
         </>
-      )}
+      ) : null}
     </>
   );
 }

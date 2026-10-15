@@ -128,38 +128,44 @@ try {
       ).status,
       404,
     );
-  assert.equal(
-    (await (await chamar("/api/orcamentos", cookieB)).json()).dados.orcamentos
-      .length,
-    0,
-  );
-  const registrosPagina = Array.from({ length: 201 }, (_, indice) => ({
-    idOrcamento: randomUUID(),
-    idEmpresa: empresaB.id,
-    numero: indice + 1,
-    clienteNome:
-      indice === 0 ? "Registro antigo único" : "Cliente de paginação",
-    subtotalCentavos: 100,
-    totalCentavos: 100,
-  }));
-  await banco.$transaction(async (transacao) => {
-    await transacao.orcamento.createMany({ data: registrosPagina });
-    await transacao.orcamentoItem.createMany({
-      data: registrosPagina.map((registro) => ({
-        idEmpresa: empresaB.id,
-        idOrcamento: registro.idOrcamento,
-        descricao: "Item de fixture",
-        quantidadeMilesimos: 1000,
-        valorUnitarioCentavos: 100,
-        subtotalCentavos: 100,
-        ordem: 0,
-      })),
-    });
-    await transacao.empresa.update({
-      where: { idEmpresa: empresaB.id },
-      data: { proximoNumeroOrcamento: 202 },
-    });
+
+  const jaPreparados = await banco.orcamento.count({
+    where: { idEmpresa: empresaB.id },
   });
+  if (jaPreparados === 0) {
+    const registrosPagina = Array.from({ length: 201 }, (_, indice) => ({
+      idOrcamento: randomUUID(),
+      idEmpresa: empresaB.id,
+      numero: indice + 1,
+      clienteNome:
+        indice === 0 ? "Registro antigo único" : "Cliente de paginação",
+      subtotalCentavos: 100,
+      totalCentavos: 100,
+    }));
+    await banco.$transaction(async (transacao) => {
+      await transacao.orcamento.createMany({ data: registrosPagina });
+      await transacao.orcamentoItem.createMany({
+        data: registrosPagina.map((registro) => ({
+          idEmpresa: empresaB.id,
+          idOrcamento: registro.idOrcamento,
+          descricao: "Item de fixture",
+          quantidadeMilesimos: 1000,
+          valorUnitarioCentavos: 100,
+          subtotalCentavos: 100,
+          ordem: 0,
+        })),
+      });
+      await transacao.empresa.update({
+        where: { idEmpresa: empresaB.id },
+        data: { proximoNumeroOrcamento: 202 },
+      });
+    });
+  } else
+    assert.equal(
+      jaPreparados,
+      201,
+      "Fixture de paginação deve manter201registros",
+    );
   const encontrados = [];
   let cursor;
   for (let pagina = 0; pagina < 5; pagina++) {

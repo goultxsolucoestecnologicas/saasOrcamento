@@ -18,6 +18,23 @@ import {
 import { ErroDominio } from "./erro-dominio";
 
 describe("proteções das APIs", () => {
+  it("retorna campos de validação mantendo o contrato anterior e cabeçalhos privados", async () => {
+    const campos = [
+      { campo: "clienteNome", mensagem: "Preencha nome do cliente." },
+    ];
+    const resposta = responderErroApi(
+      new ErroDominio("Confira os campos.", 400, campos),
+    );
+    expect(resposta.status).toBe(400);
+    expect(await resposta.json()).toEqual({
+      erro: "Confira os campos.",
+      campos,
+    });
+    expect(resposta.headers.get("cache-control")).toBe("private, no-store");
+    expect(
+      await responderErroApi(new ErroDominio("Não encontrado.", 404)).json(),
+    ).toEqual({ erro: "Não encontrado." });
+  });
   it.each([null, "https://origem-alheia.example", "http://localhost:3001"])(
     "recusa origem ausente ou diferente: %s",
     (origem) => {

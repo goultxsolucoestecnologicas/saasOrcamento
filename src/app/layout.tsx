@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { RegistroPwa } from "@/componentes/registro-pwa";
 import "./globals.css";
+import { Notificacoes } from "@/componentes/notificacoes";
 
 export const metadata: Metadata = {
   title: "Orçamentos",
@@ -20,6 +21,7 @@ export default function LayoutPrincipal({
       <body>
         <RegistroPwa />
         {children}
+        <Notificacoes />
       </body>
     </html>
   );

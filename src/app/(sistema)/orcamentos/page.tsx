@@ -8,6 +8,13 @@ import {
   reais,
   requisitar,
 } from "@/bibliotecas/api-cliente";
+import {
+  PageHeader,
+  PageSkeleton,
+  EmptyState,
+  EstadoErro,
+  ErrorAlertDialog,
+} from "@/componentes/feedback";
 import { Button } from "@/componentes/ui/button";
 export default function Orcamentos() {
   const [lista, setLista] = useState<OrcamentoUi[]>([]);
@@ -16,48 +23,55 @@ export default function Orcamentos() {
   const [erro, setErro] = useState("");
   const [proximoNumero, setProximoNumero] = useState<number | null>(null);
   const [carregandoMais, setCarregandoMais] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
+  const [erroAcao, setErroAcao] = useState("");
   const geracao = useRef(0);
   useEffect(() => {
     ++geracao.current;
     let ativo = true;
     const controle = new AbortController();
-    const temporizador = setTimeout(() => {
-      setCarregando(true);
-      setErro("");
-      requisitar<PaginaOrcamentosUi>(
-        `/api/orcamentos?${new URLSearchParams({ busca })}`,
-        { signal: controle.signal },
-      )
-        .then((pagina) => {
-          if (ativo) {
-            setLista(pagina.orcamentos);
-            setProximoNumero(pagina.proximoNumero);
-          }
-        })
-        .catch((e) => {
-          if (ativo && e.name !== "AbortError") setErro(e.message);
-        })
-        .finally(() => {
-          if (ativo) setCarregando(false);
-        });
-    }, 250);
+    const temporizador = setTimeout(
+      () => {
+        setCarregando(true);
+        setErro("");
+        requisitar<PaginaOrcamentosUi>(
+          `/api/orcamentos?${new URLSearchParams({ busca })}`,
+          { signal: controle.signal },
+        )
+          .then((pagina) => {
+            if (ativo) {
+              setLista(pagina.orcamentos);
+              setProximoNumero(pagina.proximoNumero);
+            }
+          })
+          .catch((e) => {
+            if (ativo && e.name !== "AbortError") setErro(e.message);
+          })
+          .finally(() => {
+            if (ativo) setCarregando(false);
+          });
+      },
+      busca ? 250 : 0,
+    );
     return () => {
       ativo = false;
       clearTimeout(temporizador);
       controle.abort();
     };
-  }, [busca]);
+  }, [busca, tentativa]);
   return (
     <>
-      <header className="cabecalho">
-        <h1>Orçamentos</h1>
+      <PageHeader
+        titulo="Orçamentos"
+        descricao="Consulte, edite e compartilhe seus orçamentos."
+      >
         <Button asChild>
           <Link href="/orcamentos/novo">
             <Plus />
             Novo orçamento
           </Link>
         </Button>
-      </header>
+      </PageHeader>
       <div className="busca">
         <Search size={18} />
         <input
@@ -72,23 +86,30 @@ export default function Orcamentos() {
         />
       </div>
       {erro && (
-        <p className="erro" role="alert">
-          {erro}
-        </p>
+        <EstadoErro
+          mensagem={erro}
+          tentarNovamente={() => setTentativa((v) => v + 1)}
+        />
       )}
       {carregando ? (
-        <p role="status">Carregando orçamentos…</p>
-      ) : lista.length === 0 ? (
-        <div className="painel vazio">
-          <h2>
-            {busca ? "Nenhum resultado" : "Seu primeiro orçamento começa aqui"}
-          </h2>
-          <p className="texto-secundario">
-            {busca
+        <PageSkeleton tipo="lista" cabecalho={false} />
+      ) : erro ? null : lista.length === 0 ? (
+        <EmptyState
+          titulo={
+            busca ? "Nenhum resultado" : "Seu primeiro orçamento começa aqui"
+          }
+          mensagem={
+            busca
               ? "Tente outro nome ou número."
-              : "Cadastre o cliente e adicione os serviços para gerar seu PDF."}
-          </p>
-        </div>
+              : "Cadastre o cliente e adicione os serviços para gerar seu PDF."
+          }
+        >
+          {!busca && (
+            <Button asChild>
+              <Link href="/orcamentos/novo">Criar orçamento</Link>
+            </Button>
+          )}
+        </EmptyState>
       ) : (
         <div className="lista-orcamentos">
           {lista.map((o) => (
@@ -106,7 +127,13 @@ export default function Orcamentos() {
               </div>
               <div className="card-direita">
                 <span className={`status status-${o.situacao.toLowerCase()}`}>
-                  {o.situacao.toLowerCase()}
+                  {{
+                    RASCUNHO: "Rascunho",
+                    ENVIADO: "Enviado",
+                    APROVADO: "Aprovado",
+                    RECUSADO: "Recusado",
+                    CANCELADO: "Cancelado",
+                  }[o.situacao] || o.situacao}
                 </span>
                 <strong>{reais(o.totalCentavos)}</strong>
               </div>
@@ -115,7 +142,7 @@ export default function Orcamentos() {
           ))}
         </div>
       )}
-      {!carregando && proximoNumero !== null && (
+      {!carregando && !erro && proximoNumero !== null && (
         <Button
           variant="outline"
           className="mt-6"
@@ -131,7 +158,7 @@ export default function Orcamentos() {
               setLista((atual) => [...atual, ...pagina.orcamentos]);
               setProximoNumero(pagina.proximoNumero);
             } catch (e) {
-              setErro(
+              setErroAcao(
                 e instanceof Error
                   ? e.message
                   : "Falha ao carregar a próxima página.",
@@ -144,6 +171,12 @@ export default function Orcamentos() {
           {carregandoMais ? "Carregando…" : "Carregar mais"}
         </Button>
       )}
+      <ErrorAlertDialog
+        aberto={!!erroAcao}
+        titulo="Não foi possível carregar mais orçamentos"
+        mensagem={erroAcao}
+        aoFechar={() => setErroAcao("")}
+      />
     </>
   );
 }
