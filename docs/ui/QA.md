@@ -44,4 +44,12 @@ Comandos executados: `node testes/ui-redesign.mjs`, seguido das verificações e
 
 ## Limites
 
+## Revisão de espaçamentos e responsividade — 15/10/2026
+
+Corrigidos alinhamento dos serviços/ações/total, campos comprimidos no celular, respiro entre descrições e campos, observações e situação, configuração estreita no tablet e navegação em alturas pequenas. Identidade visual e regras de negócio preservadas. A revisão independente identificou três ajustes adicionais, corrigidos e conferidos pelo principal nas capturas finais.
+
+`node testes/ui-responsividade.mjs`: 148 verificações aprovadas, incluindo nove larguras (320, 360, 390, 640, 768, 1024, 1280, 1440 e 1920px), textos sem espaços, valores de até R$20 milhões dentro do limite de domínio, estados vazio/erro, diálogos, foco e navegação em alturas de320/480px. Login real na conta fictícia autorizada; respostas de domínio interceptadas com dados fictícios, sem gravações. A versão anterior apresentou14 falhas de geometria no mesmo diagnóstico. Lint, typecheck,196 testes unitários, build e formatação aprovados.
+
+Evidências em [revisao/](revisao/): celular, tablet, desktop e conteúdo extenso. Headless Chromium cobre reflow e regras axe selecionadas; teclado virtual físico, Safari/iOS e leitor de tela não foram validados nesta rodada.
+
 Headless Chromium não demonstra teclado virtual de celular físico, leitor de tela real, compartilhamento nativo ou instalação PWA em aparelho. Axe e teclado automatizados cobrem parte da acessibilidade e não certificam conformidade WCAG completa. Não há exclusões de regras axe neste roteiro.
