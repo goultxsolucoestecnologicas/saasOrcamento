@@ -89,3 +89,5 @@ A oitava amostra `orcamento-somente-logo.pdf` foi renderizada e inspecionada: lo
 Responsável, cidade, redes sociais e slogan agora têm uma origem comum à esquerda. O telefone opcional permanece na coluna direita. O responsável principal inspecionou o recorte real da amostra sem nome/telefone e a página completa com todos os contatos: sem sobreposição ou cortes. Dados das evidências são fictícios.
 
 Lint, 196 testes unitários, typecheck e build aprovados. Os oito PDFs foram renderizados novamente; o verificador estrutural aprovou as 77 páginas. Sem alteração de schema, autenticação ou cálculos.
+
+O GET autenticado do PDF na build atual passou (HTTP 200, application/pdf e assinatura %PDF). A etapa posterior de capturas de telas atingiu timeout na espera de prontidão da primeira página; não foi concluída nesta revisão. A conferência visual do cabeçalho foi realizada nos PDFs renderizados.
