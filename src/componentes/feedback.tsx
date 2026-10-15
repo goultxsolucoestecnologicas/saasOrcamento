@@ -63,8 +63,10 @@ export function CampoFormulario({
   return (
     <div className={cn("campo", className)}>
       <label htmlFor={id}>
-        {rotulo}
-        {obrigatorio && <span aria-hidden="true"> *</span>}
+        <span>
+          {rotulo}
+          {obrigatorio && <span aria-hidden="true">{"\u00a0*"}</span>}
+        </span>
       </label>
       {campo}
       {descricao && (
