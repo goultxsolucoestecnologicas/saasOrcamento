@@ -248,6 +248,12 @@
   justify-content: space-between;
   gap: 16px;
 }
+.menu-cabecalho .dialog-titulo {
+  margin-bottom: 0;
+}
+.menu-cabecalho button {
+  flex-shrink: 0;
+}
 .menu-conteudo .sair {
   margin-top: auto;
   justify-content: flex-start;
@@ -256,6 +262,7 @@
   font-size: 14px;
   color: var(--muted-foreground);
   margin-top: 8px;
+  overflow-wrap: anywhere;
 }
 .conteudo {
   width: 100%;
@@ -274,6 +281,12 @@
 }
 .cabecalho p {
   margin-top: 6px;
+}
+.cabecalho > div {
+  min-width: 0;
+}
+.cabecalho h1 {
+  overflow-wrap: anywhere;
 }
 .cabecalho > a {
   flex: 0 0 100%;
@@ -390,7 +403,8 @@
 }
 .card-direita strong {
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-align: right;
 }
 .status {
   background: var(--accent);
@@ -445,6 +459,7 @@
   width: 100%;
   max-width: 400px;
   padding: 24px;
+  margin-bottom: 0;
 }
 .entrada h1 {
   margin-block: 16px 8px;
@@ -458,13 +473,16 @@
 .entrada button[type="submit"] {
   margin-top: 24px;
 }
+.entrada .erro {
+  margin-top: 16px;
+}
 .sobretitulo {
   font-weight: 700;
   color: var(--accent-foreground);
 }
 .campos-grade {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 .campos-grade > label {
@@ -528,6 +546,9 @@
   color: var(--muted-foreground);
   justify-content: center;
 }
+.item-editor > div {
+  min-width: 0;
+}
 .item-total strong {
   color: var(--foreground);
   font-size: 14px;
@@ -547,9 +568,11 @@
 }
 .desconto {
   margin-top: 24px;
+  grid-template-columns: minmax(0, 1fr);
 }
 .total {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   justify-content: space-between;
   align-items: center;
@@ -564,13 +587,14 @@
 .total strong {
   font-size: 24px;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  max-width: 100%;
+  margin-left: auto;
+  overflow-wrap: anywhere;
+  text-align: right;
   color: var(--accent-foreground);
 }
 .acoes-formulario {
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
+  position: static;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -598,6 +622,9 @@
   font-size: 20px;
   font-variant-numeric: tabular-nums;
   color: var(--accent-foreground);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
 }
 .linha-resumo {
   display: flex;
@@ -613,7 +640,10 @@
   min-width: 0;
 }
 .linha-resumo strong {
-  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 60%;
+  overflow-wrap: anywhere;
+  text-align: right;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
@@ -638,6 +668,20 @@
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
 }
+.dados-cliente strong,
+.revisao-mobile > p,
+.resumo-desktop > p {
+  overflow-wrap: anywhere;
+}
+.painel > .total + h2 {
+  margin-top: 24px;
+}
+.resumo-desktop > .campo {
+  margin-top: 16px;
+}
+.revisao-mobile > .observacoes + .campo {
+  margin-top: 16px;
+}
 .acoes {
   display: flex;
   gap: 8px;
@@ -661,6 +705,7 @@
 }
 .configuracoes-secoes {
   display: grid;
+  align-items: start;
   gap: 16px;
 }
 .configuracoes .painel {
@@ -668,6 +713,12 @@
 }
 .configuracoes .campo {
   margin-bottom: 16px;
+}
+.configuracoes .painel > .texto-secundario {
+  margin-bottom: 16px;
+}
+.configuracoes .campos-grade .campo {
+  margin-bottom: 0;
 }
 .logo-preview {
   height: 104px;
@@ -734,6 +785,7 @@
 .dialog-descricao {
   font-size: 14px;
   color: var(--muted-foreground);
+  overflow-wrap: anywhere;
 }
 .dialog-erros {
   margin: 16px 0 0;
@@ -752,6 +804,8 @@
 }
 .dialog-acoes button {
   flex: 1;
+  white-space: normal;
+  height: auto;
 }
 .skeleton {
   background: var(--muted);
@@ -809,8 +863,29 @@
   .campos-grade > label:first-child {
     grid-column: auto;
   }
-  .configuracoes-secoes {
-    grid-template-columns: minmax(0, 3fr) minmax(240px, 2fr);
+  .campos-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .desconto {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 359px) {
+  .card-orcamento {
+    gap: 8px;
+    padding: 12px;
+  }
+  .card-direita {
+    max-width: 130px;
+  }
+}
+@media (max-width: 479px) {
+  .acoes-formulario .proximo-mobile,
+  .acoes-formulario .gerar-mobile {
+    flex-basis: 100%;
+  }
+  .configuracoes-footer button {
+    width: 100%;
   }
 }
 @media (min-width: 1024px) {
@@ -825,6 +900,7 @@
     position: sticky;
     top: 0;
     height: 100dvh;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     padding: 24px 16px;
@@ -833,6 +909,7 @@
   }
   .lateral .marca {
     font-size: 18px;
+    flex-shrink: 0;
   }
   .lateral .marca span {
     white-space: normal;
@@ -841,6 +918,7 @@
   .lateral .sair {
     margin-top: auto;
     justify-content: flex-start;
+    flex-shrink: 0;
   }
   .conteudo {
     padding: 32px 24px;
@@ -901,7 +979,7 @@
     width: 260px;
   }
   .item-editor {
-    grid-template-columns: minmax(130px, 1fr) 70px 64px 94px 92px 92px;
+    grid-template-columns: minmax(130px, 1fr) 76px 84px 100px 100px 92px;
     gap: 8px;
     align-items: start;
     padding: 12px 0;
@@ -916,11 +994,21 @@
     padding: 8px;
   }
   .item-acoes {
-    padding-top: 24px;
+    padding-top: 40px;
   }
   .item-total {
-    padding-top: 24px;
-    min-height: 68px;
+    justify-content: flex-start;
+  }
+  .item-total > span {
+    min-height: 34px;
+    line-height: 16px;
+  }
+  .item-total strong {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    text-align: right;
   }
   .item-editor .campo label {
     font-size: 12px;
@@ -933,6 +1021,9 @@
   }
 }
 @media (min-width: 1280px) {
+  .configuracoes-secoes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .formulario-grade {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr);
@@ -964,18 +1055,12 @@
 .marca {
   min-height: 44px;
 }
-/* Rótulos com altura comum mantêm as colunas alinhadas; ações não encobrem campos. */
-.acoes-formulario {
-  position: static;
-}
+/* Rótulos com altura comum mantêm as colunas alinhadas. */
 @media (min-width: 1024px) {
   .item-editor .campo > label {
     display: block;
     min-height: 34px;
     line-height: 16px;
-  }
-  .item-acoes {
-    padding-top: 40px;
   }
 }
 [data-sonner-toast] [data-close-button] {
