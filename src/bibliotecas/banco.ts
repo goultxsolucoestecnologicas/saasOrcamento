@@ -2,6 +2,7 @@ import "server-only";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/gerado/prisma/client";
 import { obterAmbiente } from "@/bibliotecas/ambiente";
+import { prepararConexaoPostgres } from "@/bibliotecas/conexao-postgres";
 
 const contextoGlobal = globalThis as typeof globalThis & {
   banco?: PrismaClient;
@@ -10,11 +11,11 @@ const contextoGlobal = globalThis as typeof globalThis & {
 export function obterBanco(): PrismaClient {
   if (!contextoGlobal.banco) {
     const urlBanco = obterAmbiente().DATABASE_URL;
-    const esquema = new URL(urlBanco).searchParams.get("schema") ?? "public";
-    const adaptador = new PrismaPg(
-      { connectionString: urlBanco },
-      { schema: esquema },
+    const { configuracao, esquema } = prepararConexaoPostgres(
+      urlBanco,
+      process.env.POSTGRES_CA_CERTIFICADO,
     );
+    const adaptador = new PrismaPg(configuracao, { schema: esquema });
     contextoGlobal.banco = new PrismaClient({ adapter: adaptador });
   }
 

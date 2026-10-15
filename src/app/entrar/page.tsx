@@ -15,13 +15,12 @@ export default function Entrar() {
           setErro("");
           const dados = new FormData(e.currentTarget);
           try {
-            await entrarComSenha(
+            const destino = await entrarComSenha(
               String(dados.get("email")),
               String(dados.get("senha")),
             );
             // Recarrega o contexto autenticado sem reutilizar cache da sessão anterior.
-            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-            window.location.assign("/orcamentos");
+            window.location.assign(destino);
           } catch (e) {
             setErro(e instanceof Error ? e.message : "Falha ao entrar.");
           } finally {
@@ -30,7 +29,7 @@ export default function Entrar() {
         }}
       >
         <span className="sobretitulo">Orçamentos</span>
-        <h1>Entre na sua empresa</h1>
+        <h1>Entre na sua conta</h1>
         <p className="texto-secundario">
           Acesse seus orçamentos e configurações.
         </p>
