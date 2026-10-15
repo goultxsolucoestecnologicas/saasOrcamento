@@ -3,6 +3,13 @@ export interface EmpresaUi {
   nome: string;
   telefone: string | null;
   logoChave: string | null;
+  descricaoAtividade?: string | null;
+  nomeResponsavel?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  slogan?: string | null;
 }
 export interface ItemUi {
   descricao: string;
@@ -20,6 +27,10 @@ export interface OrcamentoUi {
   clienteEndereco: string | null;
   clienteCidade: string | null;
   clienteDocumento: string | null;
+  clienteNumeroEndereco?: string | null;
+  clienteInscricaoEstadual?: string | null;
+  tipoDocumento?: "ORCAMENTO" | "PEDIDO";
+  dataEmissao?: string | null;
   observacoes: string | null;
   validadeDias: number | null;
   descontoTipo: "FIXO" | "PERCENTUAL";

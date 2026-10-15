@@ -13,6 +13,7 @@ import {
 import { calcularOrcamento } from "@/funcionalidades/orcamentos/calculos";
 import {
   esquemaOrcamento,
+  dataCivilSaoPaulo,
   type OrcamentoEntrada,
 } from "@/validacoes/orcamento";
 import { traduzirErrosValidacao } from "@/validacoes/mensagens-validacao";
@@ -59,6 +60,13 @@ const camposCliente = [
     autoComplete: "street-address",
   },
   {
+    campo: "clienteNumeroEndereco",
+    rotulo: "Número do endereço",
+    obrigatorio: false,
+    limite: 20,
+    autoComplete: "off",
+  },
+  {
     campo: "clienteCidade",
     rotulo: "Cidade",
     obrigatorio: false,
@@ -68,6 +76,13 @@ const camposCliente = [
   {
     campo: "clienteDocumento",
     rotulo: "CPF/CNPJ",
+    obrigatorio: false,
+    limite: 30,
+    autoComplete: "off",
+  },
+  {
+    campo: "clienteInscricaoEstadual",
+    rotulo: "Inscrição Estadual",
     obrigatorio: false,
     limite: 30,
     autoComplete: "off",
@@ -116,6 +131,8 @@ export function FormularioOrcamento({ id }: { id?: string }) {
     clienteNome: "",
     clienteTelefone: "",
     clienteEndereco: "",
+    clienteNumeroEndereco: "",
+    clienteInscricaoEstadual: "",
     clienteCidade: "",
     clienteDocumento: "",
     observacoes: "",
@@ -133,6 +150,12 @@ export function FormularioOrcamento({ id }: { id?: string }) {
             valor: "0,00",
           },
         ],
+  );
+  const [tipoDocumento, setTipoDocumento] = useState<"ORCAMENTO" | "PEDIDO">(
+    "ORCAMENTO",
+  );
+  const [dataEmissao, setDataEmissao] = useState(() =>
+    id ? "" : dataCivilSaoPaulo(),
   );
   const [situacao, setSituacao] =
     useState<OrcamentoEntrada["situacao"]>("RASCUNHO");
@@ -153,11 +176,19 @@ export function FormularioOrcamento({ id }: { id?: string }) {
           clienteNome: o.clienteNome,
           clienteTelefone: o.clienteTelefone || "",
           clienteEndereco: o.clienteEndereco || "",
+          clienteNumeroEndereco: o.clienteNumeroEndereco || "",
+          clienteInscricaoEstadual: o.clienteInscricaoEstadual || "",
           clienteCidade: o.clienteCidade || "",
           clienteDocumento: o.clienteDocumento || "",
           observacoes: o.observacoes || "",
           validadeDias: o.validadeDias?.toString() || "",
         });
+        setTipoDocumento(o.tipoDocumento ?? "ORCAMENTO");
+        setDataEmissao(
+          o.dataEmissao
+            ? o.dataEmissao.slice(0, 10)
+            : dataCivilSaoPaulo(o.dataCriacao),
+        );
         setSituacao(o.situacao as OrcamentoEntrada["situacao"]);
         setDescontoTipo(o.descontoTipo);
         setDesconto(decimalTexto(o.descontoValor, 2));
@@ -190,6 +221,8 @@ export function FormularioOrcamento({ id }: { id?: string }) {
   function entradaBruta() {
     return {
       ...cliente,
+      tipoDocumento,
+      dataEmissao,
       validadeDias: cliente.validadeDias.trim()
         ? Number(cliente.validadeDias)
         : null,
@@ -490,6 +523,43 @@ export function FormularioOrcamento({ id }: { id?: string }) {
               Dados do cliente
             </h2>
             <div className="campos-grade">
+              <CampoFormulario
+                id="orcamento-tipoDocumento"
+                rotulo="Tipo do documento"
+                obrigatorio
+                erro={erros.tipoDocumento}
+              >
+                <select
+                  value={tipoDocumento}
+                  disabled={ocupado}
+                  onChange={(e) => {
+                    setTipoDocumento(e.target.value as "ORCAMENTO" | "PEDIDO");
+                    limparErro("tipoDocumento");
+                  }}
+                  onBlur={() => validarCampo("tipoDocumento")}
+                >
+                  <option value="ORCAMENTO">Orçamento</option>
+                  <option value="PEDIDO">Pedido</option>
+                </select>
+              </CampoFormulario>
+              <CampoFormulario
+                id="orcamento-dataEmissao"
+                rotulo="Data de emissão"
+                obrigatorio
+                erro={erros.dataEmissao}
+              >
+                <input
+                  type="date"
+                  required
+                  value={dataEmissao}
+                  disabled={ocupado}
+                  onChange={(e) => {
+                    setDataEmissao(e.target.value);
+                    limparErro("dataEmissao");
+                  }}
+                  onBlur={() => validarCampo("dataEmissao")}
+                />
+              </CampoFormulario>
               {camposCliente.map(
                 ({ campo, rotulo, obrigatorio, limite, autoComplete }) => (
                   <div
@@ -671,15 +741,24 @@ export function FormularioOrcamento({ id }: { id?: string }) {
               <strong>{cliente.clienteNome || "Nome do cliente"}</strong>
             </p>
             {[
-              cliente.clienteEndereco,
+              [cliente.clienteEndereco, cliente.clienteNumeroEndereco]
+                .filter(Boolean)
+                .join(", "),
               cliente.clienteCidade,
               cliente.clienteTelefone,
               cliente.clienteDocumento,
+              cliente.clienteInscricaoEstadual
+                ? `Inscrição Estadual: ${cliente.clienteInscricaoEstadual}`
+                : "",
             ]
               .filter(Boolean)
               .map((texto, indice) => (
                 <p key={indice}>{texto}</p>
               ))}
+            <p className="texto-secundario">
+              {tipoDocumento === "PEDIDO" ? "Pedido" : "Orçamento"} ·{" "}
+              {dataEmissao.split("-").reverse().join("/")}
+            </p>
             <hr />
             {itens.map((item) => (
               <div className="linha-resumo" key={item.chave}>
@@ -719,7 +798,7 @@ export function FormularioOrcamento({ id }: { id?: string }) {
                 ))}
               </select>
             </CampoFormulario>
-            <ResumoOrcamento valores={valores} />
+            <ResumoOrcamento tipoDocumento={tipoDocumento} valores={valores} />
           </section>
         </div>
         <aside
@@ -728,6 +807,10 @@ export function FormularioOrcamento({ id }: { id?: string }) {
         >
           <h2>Resumo do orçamento</h2>
           <p>{cliente.clienteNome || "Preencha os dados do cliente"}</p>
+          <p className="texto-secundario">
+            {tipoDocumento === "PEDIDO" ? "Pedido" : "Orçamento"} ·{" "}
+            {dataEmissao.split("-").reverse().join("/")}
+          </p>
           <p className="texto-secundario">
             {itens.length} {itens.length === 1 ? "serviço" : "serviços"}
           </p>
@@ -750,11 +833,15 @@ export function FormularioOrcamento({ id }: { id?: string }) {
               ))}
             </select>
           </CampoFormulario>
-          <ResumoOrcamento valores={valores} />
+          <ResumoOrcamento tipoDocumento={tipoDocumento} valores={valores} />
         </aside>
       </div>
       <footer className="acoes-formulario">
-        <ResumoOrcamento valores={valores} compacto />
+        <ResumoOrcamento
+          tipoDocumento={tipoDocumento}
+          valores={valores}
+          compacto
+        />
         {etapa > 0 && (
           <Button
             type="button"

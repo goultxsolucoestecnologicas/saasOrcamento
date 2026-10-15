@@ -35,6 +35,7 @@ export function CampoFormulario({
   id,
   rotulo,
   erro,
+  descricao,
   obrigatorio,
   children,
   className,
@@ -42,6 +43,7 @@ export function CampoFormulario({
   id: string;
   rotulo: string;
   erro?: string;
+  descricao?: string;
   obrigatorio?: boolean;
   children: React.ReactElement;
   className?: string;
@@ -52,7 +54,10 @@ export function CampoFormulario({
       id,
       "aria-required": obrigatorio || undefined,
       "aria-invalid": erro ? true : undefined,
-      "aria-describedby": erro ? id + "-erro" : undefined,
+      "aria-describedby":
+        [descricao && id + "-descricao", erro && id + "-erro"]
+          .filter(Boolean)
+          .join(" ") || undefined,
     },
   );
   return (
@@ -62,6 +67,11 @@ export function CampoFormulario({
         {obrigatorio && <span aria-hidden="true"> *</span>}
       </label>
       {campo}
+      {descricao && (
+        <p id={id + "-descricao"} className="texto-secundario">
+          {descricao}
+        </p>
+      )}
       {erro && (
         <p id={id + "-erro"} className="erro-campo">
           {erro}

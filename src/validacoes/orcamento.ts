@@ -2,6 +2,29 @@ import { z } from "zod";
 
 const textoOpcional = (limite: number) =>
   z.string().trim().max(limite).nullable().optional();
+export const esquemaDataEmissao = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((valor) => {
+    const data = new Date(valor + "T00:00:00.000Z");
+    return (
+      valor.slice(0, 4) !== "0000" &&
+      !Number.isNaN(data.getTime()) &&
+      data.toISOString().slice(0, 10) === valor
+    );
+  }, "Informe uma data válida.");
+/** Converte instante para a data civil de São Paulo, sem depender do navegador. */
+export function dataCivilSaoPaulo(data: Date | string = new Date()): string {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(data));
+  const obter = (tipo: string) =>
+    partes.find((parte) => parte.type === tipo)!.value;
+  return obter("year") + "-" + obter("month") + "-" + obter("day");
+}
 export const esquemaIdOrcamento = z.uuid();
 export const esquemaItemOrcamento = z
   .object({
@@ -19,6 +42,10 @@ export const esquemaOrcamento = z
     clienteEndereco: textoOpcional(300),
     clienteCidade: textoOpcional(120),
     clienteDocumento: textoOpcional(30),
+    clienteNumeroEndereco: textoOpcional(20),
+    clienteInscricaoEstadual: textoOpcional(30),
+    tipoDocumento: z.enum(["ORCAMENTO", "PEDIDO"]).optional(),
+    dataEmissao: esquemaDataEmissao.optional(),
     observacoes: textoOpcional(4000),
     validadeDias: z.number().int().min(1).max(365).nullable().optional(),
     situacao: z

@@ -5,6 +5,17 @@ export type ErroCampo = { campo: string; mensagem: string };
 const rotulos: Record<string, string> = {
   nome: "Nome da empresa",
   telefone: "Telefone",
+  descricaoAtividade: "Descrição da atividade",
+  nomeResponsavel: "Nome do responsável",
+  cidade: "Cidade",
+  estado: "Estado",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  slogan: "Slogan",
+  clienteNumeroEndereco: "Número do endereço",
+  clienteInscricaoEstadual: "Inscrição Estadual",
+  tipoDocumento: "Tipo de documento",
+  dataEmissao: "Data de emissão",
   clienteNome: "Nome do cliente",
   clienteTelefone: "Telefone do cliente",
   clienteEndereco: "Endereço",
@@ -53,6 +64,9 @@ function mensagemSegura(issue: ZodIssue, campo: string): string {
     return "Confira os dados enviados. Há um campo inválido ou não permitido.";
   const chave = campo.split(".").at(-1)!;
   const rotulo = rotulos[chave];
+  if (chave === "dataEmissao")
+    return "Informe uma data de emissão válida no formato AAAA-MM-DD.";
+  if (chave === "estado") return "Informe uma UF brasileira válida.";
   if (issue.code === "custom" && chave === "descontoValor")
     return "O percentual de desconto não pode ultrapassar 100%.";
   if (issue.code === "too_small" || issue.code === "too_big") {

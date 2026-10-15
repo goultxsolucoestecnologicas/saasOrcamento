@@ -34,9 +34,11 @@ export function calcularPreviaOrcamento(
 export function ResumoOrcamento({
   valores,
   compacto = false,
+  tipoDocumento = "ORCAMENTO",
 }: {
   valores: ValoresResumo | null;
   compacto?: boolean;
+  tipoDocumento?: "ORCAMENTO" | "PEDIDO";
 }) {
   if (compacto)
     return (
@@ -45,7 +47,9 @@ export function ResumoOrcamento({
         aria-live="polite"
         aria-atomic="true"
       >
-        <span>Total do orçamento</span>
+        <span>
+          Total do {tipoDocumento === "PEDIDO" ? "pedido" : "orçamento"}
+        </span>
         <strong>{valores ? reais(valores.totalCentavos) : "—"}</strong>
       </div>
     );
@@ -60,7 +64,9 @@ export function ResumoOrcamento({
         <strong>{valores ? reais(valores.descontoCentavos) : "—"}</strong>
       </div>
       <div className="total">
-        <span>Total do orçamento</span>
+        <span>
+          Total do {tipoDocumento === "PEDIDO" ? "pedido" : "orçamento"}
+        </span>
         <strong>{valores ? reais(valores.totalCentavos) : "—"}</strong>
       </div>
       {!valores && (

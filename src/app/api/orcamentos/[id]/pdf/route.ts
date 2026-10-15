@@ -30,7 +30,7 @@ export async function GET(
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="orcamento-${orcamento.numero}.pdf"`,
+        "Content-Disposition": `inline; filename="${orcamento.tipoDocumento === "PEDIDO" ? "pedido" : "orcamento"}-${orcamento.numero}.pdf"`,
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },

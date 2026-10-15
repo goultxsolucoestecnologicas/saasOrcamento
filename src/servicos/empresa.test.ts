@@ -37,17 +37,20 @@ it("atualiza somente nome e telefone da própria empresa", async () => {
     }),
   );
 });
-it("associa limites e obrigatoriedade aos campos sem expor chaves extras", async () => {
+it("associa limites aos campos sem expor chaves extras", async () => {
   await expect(
     atualizarEmpresa({
-      nome: " ",
+      nome: "x".repeat(151),
       telefone: "x".repeat(31),
       "senha-secreta": "segredo",
     }),
   ).rejects.toMatchObject({
     status: 400,
     campos: [
-      { campo: "nome", mensagem: "Preencha nome da empresa." },
+      {
+        campo: "nome",
+        mensagem: "Nome da empresa: use no máximo 150 caracteres.",
+      },
       { campo: "telefone", mensagem: "Telefone: use no máximo 30 caracteres." },
       {
         campo: "",
@@ -57,4 +60,30 @@ it("associa limites e obrigatoriedade aos campos sem expor chaves extras", async
     ],
   });
   expect(simulacoes.update).not.toHaveBeenCalled();
+});
+
+it("permite limpar o nome sem alterar identidade ou campos comerciais omitidos", async () => {
+  await atualizarEmpresa({ nome: "  " });
+  expect(simulacoes.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: { idEmpresa: "empresa-a" },
+      data: { nome: "", telefone: null },
+    }),
+  );
+});
+
+it("persiste identidade comercial e preserva campos omitidos por clientes legados", async () => {
+  await atualizarEmpresa({
+    nome: "Empresa",
+    descricaoAtividade: " Instalação ",
+    estado: "rs",
+    slogan: null,
+  });
+  const data = simulacoes.update.mock.calls[0][0].data;
+  expect(data).toMatchObject({
+    descricaoAtividade: "Instalação",
+    estado: "RS",
+    slogan: null,
+  });
+  expect(data).not.toHaveProperty("instagram");
 });

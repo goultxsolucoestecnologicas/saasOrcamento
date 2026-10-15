@@ -39,7 +39,11 @@ export function FileUpload({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imagem}
-            alt={`Prévia da logo de ${nome}`}
+            alt={
+              nome.trim()
+                ? `Prévia da logo de ${nome}`
+                : "Prévia da logo da empresa"
+            }
             width={152}
             height={80}
           />

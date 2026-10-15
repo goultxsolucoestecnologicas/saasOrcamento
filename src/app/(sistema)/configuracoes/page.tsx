@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
+import { esquemaEmpresa } from "@/validacoes/empresa";
 import { toast } from "sonner";
 import {
   EmpresaUi,
@@ -20,10 +20,21 @@ import {
   PageSkeleton,
 } from "@/componentes/feedback";
 import { FileUpload } from "@/componentes/file-upload";
-const esquema = z.object({
-  nome: z.string().trim().min(2).max(150),
-  telefone: z.string().trim().max(30).nullable(),
-});
+const camposComerciais = [
+  {
+    campo: "descricaoAtividade",
+    rotulo: "Descrição da atividade",
+    limite: 300,
+  },
+  { campo: "nomeResponsavel", rotulo: "Nome do responsável", limite: 150 },
+  { campo: "cidade", rotulo: "Cidade", limite: 120 },
+  { campo: "estado", rotulo: "Estado (UF)", limite: 2 },
+  { campo: "slogan", rotulo: "Frase ou slogan comercial", limite: 200 },
+] as const;
+const camposRedes = [
+  { campo: "instagram", rotulo: "Instagram", limite: 150 },
+  { campo: "facebook", rotulo: "Facebook", limite: 150 },
+] as const;
 export default function Configuracoes() {
   const [empresa, setEmpresa] = useState<EmpresaUi>();
   const [cargaErro, setCargaErro] = useState("");
@@ -78,9 +89,15 @@ export default function Configuracoes() {
             onSubmit={async (e) => {
               e.preventDefault();
               if (trava.current) return;
-              const resultado = esquema.safeParse({
+              const resultado = esquemaEmpresa.safeParse({
                 nome: empresa.nome,
                 telefone: empresa.telefone,
+                ...Object.fromEntries(
+                  [...camposComerciais, ...camposRedes].map(({ campo }) => [
+                    campo,
+                    empresa[campo] ?? null,
+                  ]),
+                ),
               });
               if (!resultado.success) {
                 setCampos(traduzirErrosValidacao(resultado.error.issues));
@@ -141,12 +158,12 @@ export default function Configuracoes() {
                 <CampoFormulario
                   id="nome"
                   rotulo="Nome da empresa"
-                  obrigatorio
+                  descricao="Opcional. Deixe vazio para usar somente a logo, maior, no PDF."
                   erro={erros.nome}
                 >
                   <input
                     maxLength={150}
-                    required
+                    disabled={ocupado}
                     value={empresa.nome}
                     onChange={(e) => {
                       setEmpresa({ ...empresa, nome: e.target.value });
@@ -161,6 +178,7 @@ export default function Configuracoes() {
                 >
                   <input
                     type="tel"
+                    disabled={ocupado}
                     inputMode="tel"
                     autoComplete="tel"
                     maxLength={30}
@@ -170,6 +188,80 @@ export default function Configuracoes() {
                     }
                   />
                 </CampoFormulario>
+              </section>
+              <section className="painel">
+                <h2>Identidade comercial</h2>
+                <p className="texto-secundario">
+                  Campos opcionais exibidos no cabeçalho do PDF.
+                </p>
+                <div className="campos-grade">
+                  {camposComerciais.map(({ campo, rotulo, limite }) => (
+                    <div
+                      key={campo}
+                      className={
+                        campo === "descricaoAtividade" || campo === "slogan"
+                          ? "campo-largo"
+                          : undefined
+                      }
+                    >
+                      <CampoFormulario
+                        id={campo}
+                        rotulo={rotulo}
+                        erro={erros[campo]}
+                      >
+                        <input
+                          value={empresa[campo] ?? ""}
+                          maxLength={limite}
+                          disabled={ocupado}
+                          autoComplete={
+                            campo === "cidade"
+                              ? "address-level2"
+                              : campo === "estado"
+                                ? "address-level1"
+                                : "off"
+                          }
+                          onChange={(e) => {
+                            setEmpresa({
+                              ...empresa,
+                              [campo]:
+                                campo === "estado"
+                                  ? e.target.value.toUpperCase()
+                                  : e.target.value,
+                            });
+                            setCampos((c) =>
+                              c.filter((i) => i.campo !== campo),
+                            );
+                          }}
+                        />
+                      </CampoFormulario>
+                    </div>
+                  ))}
+                </div>
+              </section>
+              <section className="painel">
+                <h2>Redes sociais</h2>
+                <p className="texto-secundario">
+                  Informe o perfil ou endereço público, se desejar.
+                </p>
+                {camposRedes.map(({ campo, rotulo, limite }) => (
+                  <CampoFormulario
+                    key={campo}
+                    id={campo}
+                    rotulo={rotulo}
+                    erro={erros[campo]}
+                  >
+                    <input
+                      value={empresa[campo] ?? ""}
+                      maxLength={limite}
+                      disabled={ocupado}
+                      autoComplete="off"
+                      onChange={(e) => {
+                        setEmpresa({ ...empresa, [campo]: e.target.value });
+                        setCampos((c) => c.filter((i) => i.campo !== campo));
+                      }}
+                    />
+                  </CampoFormulario>
+                ))}
               </section>
               <section className="painel">
                 <h2>Logo da empresa</h2>

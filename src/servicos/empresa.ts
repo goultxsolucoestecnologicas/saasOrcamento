@@ -1,5 +1,5 @@
 import "server-only";
-import { z } from "zod";
+import { esquemaEmpresa } from "@/validacoes/empresa";
 import { executarComDadosDaEmpresa } from "@/bibliotecas/dados-empresa";
 import { ErroDominio } from "@/bibliotecas/erro-dominio";
 import { traduzirErrosValidacao } from "@/validacoes/mensagens-validacao";
@@ -9,14 +9,14 @@ const selecaoEmpresa = {
   nome: true,
   telefone: true,
   logoChave: true,
+  descricaoAtividade: true,
+  nomeResponsavel: true,
+  cidade: true,
+  estado: true,
+  instagram: true,
+  facebook: true,
+  slogan: true,
 } as const;
-const esquemaEmpresa = z
-  .object({
-    nome: z.string().trim().min(1).max(150),
-    telefone: z.string().trim().max(30).nullable().optional(),
-  })
-  .strict();
-
 export async function buscarEmpresa() {
   return executarComDadosDaEmpresa(async (transacao, contexto) => {
     const empresa = await transacao.empresa.findUnique({
@@ -32,7 +32,7 @@ export async function atualizarEmpresa(entrada: unknown) {
   const resultado = esquemaEmpresa.safeParse(entrada);
   if (!resultado.success)
     throw new ErroDominio(
-      "Informe um nome válido e telefone com até 30 caracteres.",
+      "Confira os dados e limites dos campos da empresa.",
       400,
       traduzirErrosValidacao(resultado.error.issues),
     );
@@ -40,7 +40,7 @@ export async function atualizarEmpresa(entrada: unknown) {
     transacao.empresa.update({
       where: { idEmpresa: contexto.idEmpresa },
       data: {
-        nome: resultado.data.nome,
+        ...resultado.data,
         telefone: resultado.data.telefone ?? null,
       },
       select: selecaoEmpresa,
