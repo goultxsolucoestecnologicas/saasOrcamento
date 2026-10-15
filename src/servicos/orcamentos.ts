@@ -3,6 +3,7 @@ import { executarComDadosDaEmpresa } from "@/bibliotecas/dados-empresa";
 import { ErroDominio } from "@/bibliotecas/erro-dominio";
 import { calcularOrcamento } from "@/funcionalidades/orcamentos/calculos";
 import { esquemaIdOrcamento, esquemaOrcamento } from "@/validacoes/orcamento";
+import { traduzirErrosValidacao } from "@/validacoes/mensagens-validacao";
 
 const incluirItens = { itens: { orderBy: { ordem: "asc" as const } } };
 function validarId(id: string) {
@@ -17,6 +18,8 @@ function prepararOrcamento(entrada: unknown) {
   if (!resultado.success)
     throw new ErroDominio(
       "Dados do orçamento inválidos. Confira o cliente, os itens e os descontos.",
+      400,
+      traduzirErrosValidacao(resultado.error.issues),
     );
   const { itens, ...dados } = resultado.data;
   const calculo = calcularOrcamento({ ...dados, itens });

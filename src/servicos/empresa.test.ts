@@ -37,3 +37,24 @@ it("atualiza somente nome e telefone da própria empresa", async () => {
     }),
   );
 });
+it("associa limites e obrigatoriedade aos campos sem expor chaves extras", async () => {
+  await expect(
+    atualizarEmpresa({
+      nome: " ",
+      telefone: "x".repeat(31),
+      "senha-secreta": "segredo",
+    }),
+  ).rejects.toMatchObject({
+    status: 400,
+    campos: [
+      { campo: "nome", mensagem: "Preencha nome da empresa." },
+      { campo: "telefone", mensagem: "Telefone: use no máximo 30 caracteres." },
+      {
+        campo: "",
+        mensagem:
+          "Confira os dados enviados. Há um campo inválido ou não permitido.",
+      },
+    ],
+  });
+  expect(simulacoes.update).not.toHaveBeenCalled();
+});

@@ -33,19 +33,55 @@ export interface PaginaOrcamentosUi {
   orcamentos: OrcamentoUi[];
   proximoNumero: number | null;
 }
+export class ErroRequisicao extends Error {
+  constructor(
+    mensagem: string,
+    public readonly campos: { campo: string; mensagem: string }[] = [],
+    public readonly status?: number,
+  ) {
+    super(mensagem);
+  }
+}
 export async function requisitar<T>(
   url: string,
   opcoes?: RequestInit,
 ): Promise<T> {
-  const resposta = await fetch(url, { ...opcoes, cache: "no-store" });
-  const corpo = await resposta.json();
+  let resposta: Response;
+  try {
+    resposta = await fetch(url, { ...opcoes, cache: "no-store" });
+  } catch (erro) {
+    if (erro instanceof Error && erro.name === "AbortError") throw erro;
+    throw new ErroRequisicao(
+      "Não foi possível conectar. Verifique sua conexão e tente novamente.",
+    );
+  }
+  const corpo = await resposta
+    .json()
+    .then((valor) =>
+      valor && typeof valor === "object" && !Array.isArray(valor) ? valor : {},
+    )
+    .catch(() => ({}));
   if (resposta.status === 401) {
     // Recarrega após expirar a sessão para descartar o estado privado.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign("/entrar");
   }
   if (!resposta.ok)
-    throw new Error(corpo.erro || "Não foi possível concluir a operação.");
+    throw new ErroRequisicao(
+      typeof corpo.erro === "string"
+        ? corpo.erro
+        : "Não foi possível concluir a operação. Tente novamente.",
+      Array.isArray(corpo.campos)
+        ? corpo.campos.filter(
+            (c: { campo?: unknown; mensagem?: unknown }) =>
+              c !== null &&
+              typeof c === "object" &&
+              typeof c.campo === "string" &&
+              typeof c.mensagem === "string",
+          )
+        : [],
+      resposta.status,
+    );
   return corpo.dados as T;
 }
 export const reais = (valor: number) =>

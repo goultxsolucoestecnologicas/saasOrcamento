@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { entrarComSenha } from "@/bibliotecas/autenticacao-cliente";
-import { Button } from "@/componentes/ui/button";
+import { ErrorAlertDialog, LoadingButton } from "@/componentes/feedback";
 export default function Entrar() {
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
@@ -52,10 +52,21 @@ export default function Entrar() {
             {erro}
           </p>
         )}
-        <Button type="submit" disabled={ocupado} className="w-full">
-          {ocupado ? "Entrando…" : "Entrar"}
-        </Button>
+        <LoadingButton
+          type="submit"
+          ocupado={ocupado}
+          textoOcupado="Entrando…"
+          className="w-full"
+        >
+          Entrar
+        </LoadingButton>
       </form>
+      <ErrorAlertDialog
+        aberto={!!erro}
+        titulo="Não foi possível entrar"
+        mensagem={erro}
+        aoFechar={() => setErro("")}
+      />
     </main>
   );
 }

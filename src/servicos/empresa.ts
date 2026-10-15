@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { executarComDadosDaEmpresa } from "@/bibliotecas/dados-empresa";
 import { ErroDominio } from "@/bibliotecas/erro-dominio";
+import { traduzirErrosValidacao } from "@/validacoes/mensagens-validacao";
 
 const selecaoEmpresa = {
   idEmpresa: true,
@@ -32,6 +33,8 @@ export async function atualizarEmpresa(entrada: unknown) {
   if (!resultado.success)
     throw new ErroDominio(
       "Informe um nome válido e telefone com até 30 caracteres.",
+      400,
+      traduzirErrosValidacao(resultado.error.issues),
     );
   return executarComDadosDaEmpresa((transacao, contexto) =>
     transacao.empresa.update({

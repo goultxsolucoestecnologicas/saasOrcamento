@@ -29,6 +29,9 @@ import {
   excluirOrcamento,
   listarOrcamentos,
 } from "./orcamentos";
+import { esquemaOrcamento } from "@/validacoes/orcamento";
+import { traduzirErrosValidacao } from "@/validacoes/mensagens-validacao";
+import type { ZodIssue } from "zod";
 const idOrcamento = "6e531a29-ef50-46a2-88bb-55904df9c763";
 const dados = {
   clienteNome: "Cliente",
@@ -43,6 +46,65 @@ const dados = {
 
 describe("orçamentos com escopo obrigatório", () => {
   beforeEach(() => vi.resetAllMocks());
+  it("compartilha mensagens de campo entre validação cliente e servidor", async () => {
+    const entrada = {
+      ...dados,
+      clienteNome: "",
+      itens: [
+        { descricao: "", quantidadeMilesimos: 0, valorUnitarioCentavos: -1 },
+      ],
+      descontoTipo: "PERCENTUAL",
+      descontoValor: 10001,
+    };
+    const resultado = esquemaOrcamento.safeParse(entrada);
+    expect(resultado.success).toBe(false);
+    if (resultado.success) throw new Error("Esperava validação inválida");
+    const campos = traduzirErrosValidacao(resultado.error.issues);
+    expect(campos).toEqual(
+      expect.arrayContaining([
+        { campo: "clienteNome", mensagem: "Preencha nome do cliente." },
+        {
+          campo: "itens.0.descricao",
+          mensagem: "Preencha descrição do serviço.",
+        },
+        {
+          campo: "itens.0.quantidadeMilesimos",
+          mensagem: "Informe uma quantidade entre 0,001 e 100.000.",
+        },
+        {
+          campo: "descontoValor",
+          mensagem: "O percentual de desconto não pode ultrapassar 100%.",
+        },
+      ]),
+    );
+    await expect(criarOrcamento(entrada)).rejects.toMatchObject({
+      status: 400,
+      campos,
+    });
+    expect(simulacoes.transacao.empresa.update).not.toHaveBeenCalled();
+  });
+  it("não replica mensagem arbitrária ou caminhos desconhecidos da validação", () => {
+    const issues: ZodIssue[] = [
+      {
+        code: "custom",
+        path: ["senha-secreta"],
+        message: "postgres://segredo",
+      },
+      {
+        code: "custom",
+        path: ["itens", "segredo", "descricao"],
+        message: "senha secreta",
+      },
+      { code: "custom", path: ["clienteNome"], message: "segredo interno" },
+    ];
+    const campos = traduzirErrosValidacao(issues);
+    expect(campos).toHaveLength(2);
+    expect(JSON.stringify(campos)).not.toContain("segredo");
+    expect(campos[1]).toEqual({
+      campo: "clienteNome",
+      mensagem: "Nome do cliente: confira o valor informado.",
+    });
+  });
   it("lista a empresa autenticada com paginação e itens ordenados", async () => {
     simulacoes.transacao.orcamento.findMany.mockResolvedValue([]);
     expect(await listarOrcamentos()).toEqual({

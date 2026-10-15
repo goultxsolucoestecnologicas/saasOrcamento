@@ -1,26 +1,84 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, ArrowRight, FileText, UserRound } from "lucide-react";
+import { Plus, ArrowRight, FileText, UserRound } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/componentes/ui/button";
 import {
-  calcularOrcamento,
-  calcularSubtotalItem,
-} from "@/funcionalidades/orcamentos/calculos";
-import { esquemaOrcamento } from "@/validacoes/orcamento";
+  CampoFormulario,
+  ErrorAlertDialog,
+  LoadingButton,
+  PageSkeleton,
+} from "@/componentes/feedback";
+import { calcularOrcamento } from "@/funcionalidades/orcamentos/calculos";
+import {
+  esquemaOrcamento,
+  type OrcamentoEntrada,
+} from "@/validacoes/orcamento";
+import { traduzirErrosValidacao } from "@/validacoes/mensagens-validacao";
 import {
   decimalInteiro,
   decimalTexto,
-  OrcamentoUi,
+  ErroRequisicao,
+  type OrcamentoUi,
   reais,
   requisitar,
 } from "@/bibliotecas/api-cliente";
-type ItemFormulario = {
-  chave: string;
-  descricao: string;
-  unidade: string;
-  quantidade: string;
-  valor: string;
+import {
+  idCampoItem,
+  ItemOrcamentoEditor,
+  type ItemFormulario,
+  subtotalItemFormulario,
+} from "@/componentes/item-orcamento-editor";
+import {
+  calcularPreviaOrcamento,
+  ResumoOrcamento,
+} from "@/componentes/resumo-orcamento";
+
+type ErroCampo = { campo: string; mensagem: string };
+const camposCliente = [
+  {
+    campo: "clienteNome",
+    rotulo: "Nome",
+    obrigatorio: true,
+    limite: 150,
+    autoComplete: "name",
+  },
+  {
+    campo: "clienteTelefone",
+    rotulo: "Telefone",
+    obrigatorio: false,
+    limite: 30,
+    autoComplete: "tel",
+  },
+  {
+    campo: "clienteEndereco",
+    rotulo: "Endereço",
+    obrigatorio: false,
+    limite: 300,
+    autoComplete: "street-address",
+  },
+  {
+    campo: "clienteCidade",
+    rotulo: "Cidade",
+    obrigatorio: false,
+    limite: 120,
+    autoComplete: "address-level2",
+  },
+  {
+    campo: "clienteDocumento",
+    rotulo: "CPF/CNPJ",
+    obrigatorio: false,
+    limite: 30,
+    autoComplete: "off",
+  },
+] as const;
+const situacoes = {
+  RASCUNHO: "Rascunho",
+  ENVIADO: "Enviado",
+  APROVADO: "Aprovado",
+  RECUSADO: "Recusado",
+  CANCELADO: "Cancelado",
 };
 const novoItem = (): ItemFormulario => ({
   chave: crypto.randomUUID(),
@@ -29,12 +87,31 @@ const novoItem = (): ItemFormulario => ({
   quantidade: "1",
   valor: "0,00",
 });
+function inteiroOuInvalido(texto: string, casas: number) {
+  try {
+    return decimalInteiro(texto, casas);
+  } catch {
+    return Number.NaN;
+  }
+}
+
 export function FormularioOrcamento({ id }: { id?: string }) {
   const router = useRouter();
   const [etapa, setEtapa] = useState(0);
   const [carregando, setCarregando] = useState(!!id);
+  const [erroCarga, setErroCarga] = useState("");
+  const [tentativaCarga, setTentativaCarga] = useState(0);
   const [ocupado, setOcupado] = useState(false);
-  const [erro, setErro] = useState("");
+  const enviando = useRef(false);
+  const [acaoPendente, setAcaoPendente] = useState<"salvar" | "pdf" | null>(
+    null,
+  );
+  const [erros, setErros] = useState<Record<string, string>>({});
+  const [dialogo, setDialogo] = useState<{
+    mensagem: string;
+    campos: ErroCampo[];
+  } | null>(null);
+  const focoErro = useRef<string | null>(null);
   const [cliente, setCliente] = useState({
     clienteNome: "",
     clienteTelefone: "",
@@ -57,15 +134,21 @@ export function FormularioOrcamento({ id }: { id?: string }) {
           },
         ],
   );
-  const [situacao, setSituacao] = useState("RASCUNHO");
+  const [situacao, setSituacao] =
+    useState<OrcamentoEntrada["situacao"]>("RASCUNHO");
   const [descontoTipo, setDescontoTipo] = useState<"FIXO" | "PERCENTUAL">(
     "FIXO",
   );
   const [desconto, setDesconto] = useState("0,00");
+
   useEffect(() => {
     if (!id) return;
-    requisitar<OrcamentoUi>(`/api/orcamentos/${id}`)
+    const controller = new AbortController();
+    requisitar<OrcamentoUi>(`/api/orcamentos/${id}`, {
+      signal: controller.signal,
+    })
       .then((o) => {
+        if (controller.signal.aborted) return;
         setCliente({
           clienteNome: o.clienteNome,
           clienteTelefone: o.clienteTelefone || "",
@@ -75,7 +158,7 @@ export function FormularioOrcamento({ id }: { id?: string }) {
           observacoes: o.observacoes || "",
           validadeDias: o.validadeDias?.toString() || "",
         });
-        setSituacao(o.situacao);
+        setSituacao(o.situacao as OrcamentoEntrada["situacao"]);
         setDescontoTipo(o.descontoTipo);
         setDesconto(decimalTexto(o.descontoValor, 2));
         setItens(
@@ -87,99 +170,300 @@ export function FormularioOrcamento({ id }: { id?: string }) {
             valor: decimalTexto(i.valorUnitarioCentavos, 2),
           })),
         );
+        setErroCarga("");
       })
-      .catch((e) => setErro(e.message))
-      .finally(() => setCarregando(false));
-  }, [id]);
-  function entrada() {
-    if (!cliente.clienteNome.trim())
-      throw new Error("Informe o nome do cliente.");
-    if (!itens.length) throw new Error("Adicione pelo menos um serviço.");
-    const descontoValor = decimalInteiro(desconto, 2);
-    if (descontoTipo === "PERCENTUAL" && descontoValor > 10000)
-      throw new Error("O desconto não pode exceder 100%.");
-    if (
-      cliente.validadeDias &&
-      (!Number.isInteger(Number(cliente.validadeDias)) ||
-        Number(cliente.validadeDias) < 1 ||
-        Number(cliente.validadeDias) > 365)
-    )
-      throw new Error("A validade deve ser de 1 a 365 dias.");
+      .catch((erro: unknown) => {
+        if (controller.signal.aborted) return;
+        const mensagem =
+          erro instanceof ErroRequisicao
+            ? erro.message
+            : "Não conseguimos carregar este orçamento. Tente novamente.";
+        setErroCarga(mensagem);
+        setDialogo({ mensagem, campos: [] });
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCarregando(false);
+      });
+    return () => controller.abort();
+  }, [id, tentativaCarga]);
+
+  function entradaBruta() {
     return {
       ...cliente,
-      validadeDias: cliente.validadeDias ? Number(cliente.validadeDias) : null,
+      validadeDias: cliente.validadeDias.trim()
+        ? Number(cliente.validadeDias)
+        : null,
       situacao,
       descontoTipo,
-      descontoValor,
-      itens: itens.map((i) => {
-        if (!i.descricao.trim())
-          throw new Error("Informe a descrição dos serviços.");
-        const quantidadeMilesimos = decimalInteiro(i.quantidade, 3);
-        if (!quantidadeMilesimos)
-          throw new Error("A quantidade deve ser maior que zero.");
-        return {
-          descricao: i.descricao,
-          unidade: i.unidade,
-          quantidadeMilesimos,
-          valorUnitarioCentavos: decimalInteiro(i.valor, 2),
-        };
-      }),
+      descontoValor: inteiroOuInvalido(desconto, 2),
+      itens: itens.map((i) => ({
+        descricao: i.descricao,
+        unidade: i.unidade,
+        quantidadeMilesimos: inteiroOuInvalido(i.quantidade, 3),
+        valorUnitarioCentavos: inteiroOuInvalido(i.valor, 2),
+      })),
     };
   }
-  function avancar() {
-    try {
-      if (etapa === 0 && !cliente.clienteNome.trim())
-        throw new Error("Informe o nome do cliente.");
-      if (etapa === 1) entrada();
-      setErro("");
-      setEtapa(etapa + 1);
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Confira os campos.");
+  function errosValidacao() {
+    const validacao = esquemaOrcamento.safeParse(entradaBruta());
+    const campos = validacao.success
+      ? []
+      : traduzirErrosValidacao(validacao.error.issues);
+    if (validacao.success) {
+      try {
+        calcularOrcamento(validacao.data);
+      } catch (erro) {
+        campos.push({
+          campo: "descontoValor",
+          mensagem:
+            erro instanceof Error
+              ? erro.message
+              : "Confira os valores do orçamento.",
+        });
+      }
     }
+    return { validacao, campos };
+  }
+  function idCampo(campo: string) {
+    if (campo === "situacao" && window.matchMedia("(min-width:1024px)").matches)
+      return "orcamento-situacao-desktop";
+    const partes = campo.match(/^itens\.(\d+)\.(.+)$/);
+    if (partes) {
+      const item = itens[Number(partes[1])];
+      return item ? idCampoItem(item.chave, partes[2]) : "adicionar-servico";
+    }
+    return campo === "itens" ? "adicionar-servico" : `orcamento-${campo}`;
+  }
+  function exibirErro(
+    campos: ErroCampo[],
+    mensagem = "Encontramos algumas informações que precisam ser corrigidas.",
+  ) {
+    setErros(
+      Object.fromEntries(
+        campos.map(({ campo, mensagem }) => [campo, mensagem]),
+      ),
+    );
+    focoErro.current = campos[0]?.campo ?? null;
+    setDialogo({ mensagem, campos });
+  }
+  function focarPrimeiroErro() {
+    const campo = focoErro.current;
+    if (!campo) return;
+    const etapaCampo =
+      campo.startsWith("itens") || campo.startsWith("desconto")
+        ? 1
+        : campo === "situacao"
+          ? 2
+          : 0;
+    setEtapa(etapaCampo);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const elemento = document.getElementById(idCampo(campo));
+        elemento?.focus({ preventScroll: true });
+        elemento?.scrollIntoView({ block: "center", behavior: "instant" });
+      }),
+    );
+    focoErro.current = null;
+  }
+  function limparErro(campo: string) {
+    setErros((atuais) => {
+      const novos = { ...atuais };
+      delete novos[campo];
+      return novos;
+    });
+  }
+  function validarCampo(campo: string) {
+    const mensagem = errosValidacao().campos.find(
+      (erro) => erro.campo === campo,
+    )?.mensagem;
+    setErros((atuais) => {
+      const novos = { ...atuais };
+      if (mensagem) novos[campo] = mensagem;
+      else delete novos[campo];
+      return novos;
+    });
+  }
+  function avancar() {
+    if (enviando.current) return;
+    const { campos } = errosValidacao();
+    const relevantes =
+      etapa === 0
+        ? campos.filter(
+            ({ campo }) =>
+              !campo.startsWith("itens") &&
+              !campo.startsWith("desconto") &&
+              campo !== "situacao",
+          )
+        : campos;
+    if (relevantes.length) {
+      exibirErro(relevantes);
+      return;
+    }
+    setEtapa((atual) => Math.min(atual + 1, 2));
+    requestAnimationFrame(() =>
+      document
+        .getElementById(`titulo-etapa-${Math.min(etapa + 1, 2)}`)
+        ?.focus({ preventScroll: true }),
+    );
   }
   async function salvar(pdf: boolean) {
+    if (enviando.current || carregando || erroCarga) return;
+    const { validacao, campos } = errosValidacao();
+    if (!validacao.success || campos.length) {
+      exibirErro(campos);
+      return;
+    }
+    enviando.current = true;
     setOcupado(true);
-    setErro("");
+    setAcaoPendente(pdf ? "pdf" : "salvar");
     try {
-      const dados = entrada();
       const salvo = await requisitar<OrcamentoUi>(
         id ? `/api/orcamentos/${id}` : "/api/orcamentos",
         {
           method: id ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dados),
+          body: JSON.stringify(validacao.data),
         },
       );
+      toast.success(id ? "Orçamento atualizado." : "Orçamento salvo.");
       router.push(`/orcamentos/${salvo.idOrcamento}${pdf ? "?pdf=1" : ""}`);
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Erro ao salvar.");
-    } finally {
+      // Bloqueie até sair da página para não criar outro orçamento.
+    } catch (erro) {
+      const mensagem =
+        erro instanceof ErroRequisicao
+          ? erro.message
+          : "Não conseguimos salvar agora. Seus dados foram mantidos. Tente novamente.";
+      exibirErro(erro instanceof ErroRequisicao ? erro.campos : [], mensagem);
+      enviando.current = false;
       setOcupado(false);
+      setAcaoPendente(null);
     }
   }
-  let subtotal = 0;
-  let total = 0;
-  try {
-    const valores = calcularOrcamento(esquemaOrcamento.parse(entrada()));
-    subtotal = valores.subtotalCentavos;
-    total = valores.totalCentavos;
-  } catch {
-    // Campos incompletos não exibem estimativas que o servidor recusaria.
-  }
+  const valores = calcularPreviaOrcamento(itens, descontoTipo, desconto);
+
   function alterarItem(
     chave: string,
     campo: keyof ItemFormulario,
     valor: string,
   ) {
-    setItens(
-      itens.map((i) => (i.chave === chave ? { ...i, [campo]: valor } : i)),
+    const indice = itens.findIndex((i) => i.chave === chave);
+    const campoValidacao =
+      campo === "quantidade"
+        ? "quantidadeMilesimos"
+        : campo === "valor"
+          ? "valorUnitarioCentavos"
+          : campo;
+    limparErro(`itens.${indice}.${campoValidacao}`);
+    setItens((atuais) =>
+      atuais.map((i) => (i.chave === chave ? { ...i, [campo]: valor } : i)),
     );
   }
-  if (carregando) return <p role="status">Carregando orçamento…</p>;
+  function focarDescricao(chave: string) {
+    requestAnimationFrame(() =>
+      document.getElementById(idCampoItem(chave, "descricao"))?.focus(),
+    );
+  }
+  function adicionar() {
+    if (itens.length >= 100 || ocupado) return;
+    const item = novoItem();
+    setItens((atuais) => [...atuais, item]);
+    limparErro("itens");
+    focarDescricao(item.chave);
+  }
+  function duplicar(indice: number) {
+    if (itens.length >= 100 || ocupado) return;
+    const item = { ...itens[indice], chave: crypto.randomUUID() };
+    setItens((atuais) => [
+      ...atuais.slice(0, indice + 1),
+      item,
+      ...atuais.slice(indice + 1),
+    ]);
+    setErros((atuais) =>
+      Object.fromEntries(
+        Object.entries(atuais).filter(([campo]) => !campo.startsWith("itens")),
+      ),
+    );
+    focarDescricao(item.chave);
+    toast.success("Serviço duplicado.");
+  }
+  function remover(indice: number) {
+    if (ocupado) return;
+    const destino = itens[indice + 1]?.chave ?? itens[indice - 1]?.chave;
+    setItens((atuais) => atuais.filter((_, n) => n !== indice));
+    setErros((atuais) =>
+      Object.fromEntries(
+        Object.entries(atuais).filter(([campo]) => !campo.startsWith("itens")),
+      ),
+    );
+    requestAnimationFrame(() =>
+      document
+        .getElementById(
+          destino ? idCampoItem(destino, "descricao") : "adicionar-servico",
+        )
+        ?.focus(),
+    );
+  }
+  const dialogoErro = (
+    <ErrorAlertDialog
+      aberto={!!dialogo}
+      titulo={
+        erroCarga
+          ? "Não foi possível carregar o orçamento"
+          : "Não foi possível salvar o orçamento"
+      }
+      mensagem={dialogo?.mensagem ?? ""}
+      campos={dialogo?.campos}
+      aoFechar={() => setDialogo(null)}
+      aposFechar={
+        dialogo?.campos.some(({ campo }) => !!campo)
+          ? focarPrimeiroErro
+          : undefined
+      }
+    />
+  );
+  if (carregando) return <PageSkeleton tipo="formulario" />;
+  if (erroCarga)
+    return (
+      <>
+        <header className="cabecalho">
+          <h1>Editar orçamento</h1>
+        </header>
+        <section className="painel estado-erro" role="alert">
+          <h2>Não foi possível carregar</h2>
+          <p>{erroCarga}</p>
+          <Button
+            onClick={() => {
+              setCarregando(true);
+              setErroCarga("");
+              setDialogo(null);
+              setTentativaCarga((n) => n + 1);
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </section>
+        {dialogoErro}
+      </>
+    );
+
   return (
-    <>
+    <form
+      noValidate
+      onSubmit={(evento) => {
+        evento.preventDefault();
+        if (window.matchMedia("(max-width: 1023px)").matches && etapa < 2)
+          avancar();
+        else void salvar(false);
+      }}
+      aria-busy={ocupado}
+    >
       <header className="cabecalho">
-        <h1>{id ? "Editar orçamento" : "Novo orçamento"}</h1>
+        <div>
+          <h1>{id ? "Editar orçamento" : "Novo orçamento"}</h1>
+          <p className="texto-secundario">
+            Preencha os dados, adicione os serviços e confira o total.
+          </p>
+        </div>
         <span className="texto-secundario etapa-contador">
           Etapa {etapa + 1} de 3
         </span>
@@ -195,342 +479,339 @@ export function FormularioOrcamento({ id }: { id?: string }) {
           </li>
         ))}
       </ol>
-      {erro && (
-        <p className="erro" role="alert">
-          {erro}
-        </p>
-      )}
       <div className="formulario-grade">
         <div>
           <section
             className={`painel etapa etapa-${etapa === 0 ? "visivel" : "oculta"}`}
+            aria-labelledby="titulo-etapa-0"
           >
-            <h2>
-              <UserRound size={19} />
+            <h2 id="titulo-etapa-0" tabIndex={-1}>
+              <UserRound size={19} aria-hidden="true" />
               Dados do cliente
             </h2>
             <div className="campos-grade">
-              {[
-                { campo: "clienteNome", rotulo: "Nome", obrigatorio: true },
-                {
-                  campo: "clienteTelefone",
-                  rotulo: "Telefone",
-                  obrigatorio: false,
-                },
-                {
-                  campo: "clienteEndereco",
-                  rotulo: "Endereço",
-                  obrigatorio: false,
-                },
-                {
-                  campo: "clienteCidade",
-                  rotulo: "Cidade",
-                  obrigatorio: false,
-                },
-                {
-                  campo: "clienteDocumento",
-                  rotulo: "CPF/CNPJ",
-                  obrigatorio: false,
-                },
-              ].map(({ campo, rotulo, obrigatorio }) => (
-                <label key={campo}>
-                  {rotulo}
-                  {obrigatorio ? " *" : ""}
-                  <input
-                    required={obrigatorio}
-                    value={cliente[campo as keyof typeof cliente]}
-                    onChange={(e) =>
-                      setCliente({ ...cliente, [campo]: e.target.value })
+              {camposCliente.map(
+                ({ campo, rotulo, obrigatorio, limite, autoComplete }) => (
+                  <div
+                    key={campo}
+                    className={
+                      campo === "clienteEndereco" ? "campo-largo" : undefined
                     }
-                    maxLength={
-                      campo === "clienteNome"
-                        ? 150
-                        : campo === "clienteEndereco"
-                          ? 300
-                          : campo === "clienteCidade"
-                            ? 120
-                            : 30
-                    }
-                    autoComplete={
-                      campo === "clienteNome"
-                        ? "name"
-                        : campo === "clienteTelefone"
-                          ? "tel"
-                          : undefined
-                    }
-                  />
-                </label>
-              ))}
-              <label>
-                Validade em dias
+                  >
+                    <CampoFormulario
+                      id={`orcamento-${campo}`}
+                      rotulo={rotulo}
+                      obrigatorio={obrigatorio}
+                      erro={erros[campo]}
+                    >
+                      <input
+                        value={cliente[campo]}
+                        disabled={ocupado}
+                        onChange={(e) => {
+                          setCliente((atual) => ({
+                            ...atual,
+                            [campo]: e.target.value,
+                          }));
+                          limparErro(campo);
+                        }}
+                        onBlur={() => validarCampo(campo)}
+                        maxLength={limite}
+                        autoComplete={autoComplete}
+                        type={campo === "clienteTelefone" ? "tel" : "text"}
+                        inputMode={
+                          campo === "clienteDocumento" ? "numeric" : undefined
+                        }
+                      />
+                    </CampoFormulario>
+                  </div>
+                ),
+              )}
+              <CampoFormulario
+                id="orcamento-validadeDias"
+                rotulo="Validade em dias"
+                erro={erros.validadeDias}
+              >
                 <input
                   type="number"
                   min="1"
                   max="365"
+                  inputMode="numeric"
                   value={cliente.validadeDias}
-                  onChange={(e) =>
-                    setCliente({ ...cliente, validadeDias: e.target.value })
-                  }
+                  disabled={ocupado}
+                  placeholder="Opcional"
+                  onChange={(e) => {
+                    setCliente((atual) => ({
+                      ...atual,
+                      validadeDias: e.target.value,
+                    }));
+                    limparErro("validadeDias");
+                  }}
+                  onBlur={() => validarCampo("validadeDias")}
                 />
-              </label>
-              <label className="campo-largo">
-                Observações
-                <textarea
-                  rows={3}
-                  maxLength={4000}
-                  value={cliente.observacoes}
-                  onChange={(e) =>
-                    setCliente({ ...cliente, observacoes: e.target.value })
-                  }
-                />
-              </label>
+              </CampoFormulario>
+              <div className="campo-largo">
+                <CampoFormulario
+                  id="orcamento-observacoes"
+                  rotulo="Observações"
+                  erro={erros.observacoes}
+                >
+                  <textarea
+                    rows={3}
+                    maxLength={4000}
+                    value={cliente.observacoes}
+                    disabled={ocupado}
+                    onChange={(e) => {
+                      setCliente((atual) => ({
+                        ...atual,
+                        observacoes: e.target.value,
+                      }));
+                      limparErro("observacoes");
+                    }}
+                  />
+                </CampoFormulario>
+              </div>
             </div>
           </section>
           <section
             className={`painel etapa etapa-${etapa === 1 ? "visivel" : "oculta"}`}
+            aria-labelledby="titulo-etapa-1"
           >
-            <h2>
-              <FileText size={19} />
-              Itens do orçamento
+            <h2 id="titulo-etapa-1" tabIndex={-1}>
+              <FileText size={19} aria-hidden="true" />
+              Itens do orçamento{" "}
+              <span className="texto-secundario">({itens.length})</span>
             </h2>
-            {itens.map((i, n) => (
-              <div className="item-servico" key={i.chave}>
-                <div className="item-topo">
-                  <label>
-                    Descrição do serviço {n + 1}
-                    <input
-                      value={i.descricao}
-                      maxLength={500}
-                      onChange={(e) =>
-                        alterarItem(i.chave, "descricao", e.target.value)
-                      }
-                      required
-                    />
-                  </label>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`Remover serviço ${n + 1}`}
-                    onClick={() =>
-                      setItens(itens.filter((j) => j.chave !== i.chave))
-                    }
-                  >
-                    <Trash2 className="text-destructive" />
-                  </Button>
-                </div>
-                <div className="campos-grade">
-                  <label>
-                    Quantidade
-                    <input
-                      inputMode="decimal"
-                      value={i.quantidade}
-                      onChange={(e) =>
-                        alterarItem(i.chave, "quantidade", e.target.value)
-                      }
-                    />
-                  </label>
-                  <label>
-                    Unidade
-                    <select
-                      value={i.unidade}
-                      onChange={(e) =>
-                        alterarItem(i.chave, "unidade", e.target.value)
-                      }
-                    >
-                      {["m²", "m", "un", "h", "dia", "serviço"].map((u) => (
-                        <option key={u}>{u}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Valor unitário (R$)
-                    <input
-                      inputMode="decimal"
-                      value={i.valor}
-                      onChange={(e) =>
-                        alterarItem(i.chave, "valor", e.target.value)
-                      }
-                    />
-                  </label>
-                  <div className="item-total">
-                    <span>Total</span>
-                    <strong>
-                      {(() => {
-                        try {
-                          return reais(
-                            calcularSubtotalItem(
-                              decimalInteiro(i.quantidade, 3),
-                              decimalInteiro(i.valor, 2),
-                            ),
-                          );
-                        } catch {
-                          return "—";
-                        }
-                      })()}
-                    </strong>
-                  </div>
-                </div>
-              </div>
+            {itens.map((item, indice) => (
+              <ItemOrcamentoEditor
+                key={item.chave}
+                item={item}
+                indice={indice}
+                erros={erros}
+                ocupado={ocupado}
+                podeDuplicar={itens.length < 100}
+                aoAlterar={(campo, valor) =>
+                  alterarItem(item.chave, campo, valor)
+                }
+                aoValidar={validarCampo}
+                aoDuplicar={() => duplicar(indice)}
+                aoRemover={() => remover(indice)}
+              />
             ))}
+            {!itens.length && (
+              <p className="texto-secundario">
+                Adicione o primeiro serviço para começar.
+              </p>
+            )}
+            {erros.itens && (
+              <p id="erro-itens" className="erro-campo" role="alert">
+                {erros.itens}
+              </p>
+            )}
             <Button
+              id="adicionar-servico"
               type="button"
               variant="outline"
               className="adicionar"
-              onClick={() => setItens([...itens, novoItem()])}
+              disabled={ocupado || itens.length >= 100}
+              aria-describedby={erros.itens ? "erro-itens" : undefined}
+              onClick={adicionar}
             >
               <Plus />
               Adicionar serviço
             </Button>
+            {itens.length >= 100 && (
+              <p className="texto-secundario">
+                Limite de 100 serviços por orçamento.
+              </p>
+            )}
             <div className="campos-grade desconto">
-              <label>
-                Tipo de desconto
+              <CampoFormulario
+                id="orcamento-descontoTipo"
+                rotulo="Tipo de desconto"
+                erro={erros.descontoTipo}
+              >
                 <select
                   value={descontoTipo}
-                  onChange={(e) =>
-                    setDescontoTipo(e.target.value as "FIXO" | "PERCENTUAL")
-                  }
+                  disabled={ocupado}
+                  onChange={(e) => {
+                    setDescontoTipo(e.target.value as "FIXO" | "PERCENTUAL");
+                    limparErro("descontoValor");
+                  }}
                 >
                   <option value="FIXO">Valor em reais</option>
                   <option value="PERCENTUAL">Percentual</option>
                 </select>
-              </label>
-              <label>
-                Desconto {descontoTipo === "FIXO" ? "(R$)" : "(%)"}
+              </CampoFormulario>
+              <CampoFormulario
+                id="orcamento-descontoValor"
+                rotulo={`Desconto ${descontoTipo === "FIXO" ? "(R$)" : "(%)"}`}
+                erro={erros.descontoValor}
+              >
                 <input
                   inputMode="decimal"
                   value={desconto}
-                  onChange={(e) => setDesconto(e.target.value)}
+                  disabled={ocupado}
+                  onChange={(e) => {
+                    setDesconto(e.target.value);
+                    limparErro("descontoValor");
+                  }}
+                  onBlur={() => validarCampo("descontoValor")}
                 />
-              </label>
+              </CampoFormulario>
             </div>
           </section>
           <section
             className={`painel etapa revisao-mobile etapa-${etapa === 2 ? "visivel" : "oculta"}`}
+            aria-labelledby="titulo-etapa-2"
           >
-            <h2>Resumo do orçamento</h2>
+            <h2 id="titulo-etapa-2" tabIndex={-1}>
+              Resumo do orçamento
+            </h2>
             <p>
               <strong>{cliente.clienteNome || "Nome do cliente"}</strong>
             </p>
-            <p>{cliente.clienteEndereco}</p>
-            <p>{cliente.clienteCidade}</p>
-            <p>{cliente.clienteTelefone}</p>
-            <p>{cliente.clienteDocumento}</p>
+            {[
+              cliente.clienteEndereco,
+              cliente.clienteCidade,
+              cliente.clienteTelefone,
+              cliente.clienteDocumento,
+            ]
+              .filter(Boolean)
+              .map((texto, indice) => (
+                <p key={indice}>{texto}</p>
+              ))}
             <hr />
-            {itens.map((i) => (
-              <div className="linha-resumo" key={i.chave}>
+            {itens.map((item) => (
+              <div className="linha-resumo" key={item.chave}>
                 <span>
-                  {i.descricao}
+                  {item.descricao || "Serviço sem descrição"}
                   <small>
-                    {i.quantidade} {i.unidade} × R$ {i.valor}
+                    {item.quantidade} {item.unidade} × R$ {item.valor}
                   </small>
                 </span>
+                <strong>
+                  {(() => {
+                    const subtotal = subtotalItemFormulario(item);
+                    return subtotal === null ? "—" : reais(subtotal);
+                  })()}
+                </strong>
               </div>
             ))}
             {cliente.observacoes && (
               <p className="observacoes">{cliente.observacoes}</p>
             )}
-            <label>
-              Situação
+            <CampoFormulario
+              id="orcamento-situacao"
+              rotulo="Situação"
+              erro={erros.situacao}
+            >
               <select
                 value={situacao}
-                onChange={(e) => setSituacao(e.target.value)}
+                disabled={ocupado}
+                onChange={(e) =>
+                  setSituacao(e.target.value as OrcamentoEntrada["situacao"])
+                }
               >
-                {[
-                  "RASCUNHO",
-                  "ENVIADO",
-                  "APROVADO",
-                  "RECUSADO",
-                  "CANCELADO",
-                ].map((s) => (
-                  <option key={s} value={s}>
-                    {s.toLowerCase()}
+                {Object.entries(situacoes).map(([valor, rotulo]) => (
+                  <option key={valor} value={valor}>
+                    {rotulo}
                   </option>
                 ))}
               </select>
-            </label>
-            <div className="total">
-              <span>Total do orçamento</span>
-              <strong>{reais(total)}</strong>
-            </div>
+            </CampoFormulario>
+            <ResumoOrcamento valores={valores} />
           </section>
         </div>
-        <aside className="painel resumo-desktop">
+        <aside
+          className="painel resumo-desktop"
+          aria-label="Resumo do orçamento"
+        >
           <h2>Resumo do orçamento</h2>
-          <label>
-            Situação
+          <p>{cliente.clienteNome || "Preencha os dados do cliente"}</p>
+          <p className="texto-secundario">
+            {itens.length} {itens.length === 1 ? "serviço" : "serviços"}
+          </p>
+          <CampoFormulario
+            id="orcamento-situacao-desktop"
+            rotulo="Situação"
+            erro={erros.situacao}
+          >
             <select
               value={situacao}
-              onChange={(e) => setSituacao(e.target.value)}
+              disabled={ocupado}
+              onChange={(e) =>
+                setSituacao(e.target.value as OrcamentoEntrada["situacao"])
+              }
             >
-              {["RASCUNHO", "ENVIADO", "APROVADO", "RECUSADO", "CANCELADO"].map(
-                (s) => (
-                  <option key={s} value={s}>
-                    {s.toLowerCase()}
-                  </option>
-                ),
-              )}
+              {Object.entries(situacoes).map(([valor, rotulo]) => (
+                <option key={valor} value={valor}>
+                  {rotulo}
+                </option>
+              ))}
             </select>
-          </label>
-          <p>{cliente.clienteNome || "Preencha os dados do cliente"}</p>
-          <div className="linha-resumo">
-            <span>Subtotal</span>
-            <strong>{reais(subtotal)}</strong>
-          </div>
-          <div className="total">
-            <span>Total</span>
-            <strong>{reais(total)}</strong>
-          </div>
-          <p className="texto-secundario">
-            Prévia. O total será validado ao salvar.
-          </p>
+          </CampoFormulario>
+          <ResumoOrcamento valores={valores} />
         </aside>
       </div>
       <footer className="acoes-formulario">
+        <ResumoOrcamento valores={valores} compacto />
         {etapa > 0 && (
           <Button
             type="button"
             variant="outline"
             className="voltar-mobile"
-            onClick={() => setEtapa(etapa - 1)}
+            disabled={ocupado}
+            onClick={() => setEtapa((atual) => atual - 1)}
           >
             Voltar
           </Button>
         )}
-        <Button
+        <LoadingButton
           type="button"
           variant="outline"
+          ocupado={acaoPendente === "salvar"}
+          textoOcupado="Salvando…"
           disabled={ocupado}
-          onClick={() => salvar(false)}
+          onClick={() => void salvar(false)}
         >
           Salvar orçamento
-        </Button>
+        </LoadingButton>
         {etapa < 2 ? (
-          <Button type="button" className="proximo-mobile" onClick={avancar}>
+          <Button
+            type="button"
+            className="proximo-mobile"
+            disabled={ocupado}
+            onClick={avancar}
+          >
             Próximo
             <ArrowRight />
           </Button>
         ) : (
-          <Button
+          <LoadingButton
             type="button"
             className="gerar-mobile"
+            ocupado={acaoPendente === "pdf"}
+            textoOcupado="Salvando…"
             disabled={ocupado}
-            onClick={() => salvar(true)}
+            onClick={() => void salvar(true)}
           >
             <FileText />
-            {ocupado ? "Salvando…" : "Gerar PDF"}
-          </Button>
+            Gerar PDF
+          </LoadingButton>
         )}
-        <Button
+        <LoadingButton
           type="button"
           className="gerar-desktop"
+          ocupado={acaoPendente === "pdf"}
+          textoOcupado="Salvando…"
           disabled={ocupado}
-          onClick={() => salvar(true)}
+          onClick={() => void salvar(true)}
         >
           <FileText />
           Gerar PDF
-        </Button>
+        </LoadingButton>
       </footer>
-    </>
+      {dialogoErro}
+    </form>
   );
 }
