@@ -1015,6 +1015,7 @@
   }
   .adicionar {
     width: auto;
+    margin-top: 16px;
   }
   .dialog-acoes button {
     flex: 0 1 auto;
