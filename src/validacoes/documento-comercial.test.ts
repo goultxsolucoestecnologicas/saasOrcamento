@@ -1,5 +1,12 @@
 import { expect, it } from "vitest";
 import { esquemaEmpresa } from "./empresa";
+it("nome da empresa pode ficar vazio ou ser omitido, respeitando o limite", () => {
+  expect(esquemaEmpresa.parse({ nome: "  " }).nome).toBe("");
+  expect(esquemaEmpresa.parse({})).not.toHaveProperty("nome");
+  expect(esquemaEmpresa.safeParse({ nome: "x".repeat(151) }).success).toBe(
+    false,
+  );
+});
 import {
   esquemaDataEmissao,
   dataCivilSaoPaulo,

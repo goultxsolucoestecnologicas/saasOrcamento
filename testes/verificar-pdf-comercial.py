@@ -33,6 +33,12 @@ for arquivo in arquivos:
         assert "\ufffd" not in completo, "Texto com caractere de substituição"
     if "sem-logo" in arquivo.name:
         assert not any(p.images for p in leitor.pages), "Amostra sem logo contém imagens"
+    if "somente-logo" in arquivo.name:
+        assert any(p.images for p in leitor.pages), "Logo ausente no cabeçalho sem nome"
+        texto_completo = " ".join((p.extract_text() or "") for p in leitor.pages)
+        assert "Demonstração" not in texto_completo, "Nome exibido apesar de vazio"
+        assert "Instalação e acabamento de pisos" not in texto_completo, "Descrição exibida apesar de nome vazio"
+        assert "Responsável fictício" in texto_completo, "Contatos não devem ser omitidos"
     if "quebras-extremas" in arquivo.name:
         texto = "\n".join(p.extract_text() for p in leitor.pages)
         linhas = [linha.strip() for linha in texto.splitlines()]

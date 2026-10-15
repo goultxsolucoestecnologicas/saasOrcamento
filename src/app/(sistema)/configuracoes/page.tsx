@@ -158,13 +158,12 @@ export default function Configuracoes() {
                 <CampoFormulario
                   id="nome"
                   rotulo="Nome da empresa"
-                  obrigatorio
+                  descricao="Opcional. Deixe vazio para usar somente a logo, maior, no PDF."
                   erro={erros.nome}
                 >
                   <input
                     maxLength={150}
                     disabled={ocupado}
-                    required
                     value={empresa.nome}
                     onChange={(e) => {
                       setEmpresa({ ...empresa, nome: e.target.value });

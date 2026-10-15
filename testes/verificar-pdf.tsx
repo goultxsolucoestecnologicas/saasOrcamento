@@ -101,6 +101,7 @@ export async function gerarAmostrasPdf(diretorio = resolve(".tmp")) {
   };
   for (const [nome, orcamento] of [
     ["orcamento-teste.pdf", amostraPdf],
+    ["orcamento-somente-logo.pdf", amostraPdf],
     ["orcamento-extenso.pdf", amostraExtensaPdf],
     ["orcamento-cem-itens-curtos.pdf", amostraCemItensCurtosPdf],
     [
@@ -157,7 +158,13 @@ export async function gerarAmostrasPdf(diretorio = resolve(".tmp")) {
         orcamento={orcamento}
         empresa={
           nome.includes("logo") && !nome.includes("sem-logo")
-            ? empresaCompleta
+            ? {
+                ...empresaCompleta,
+                nome:
+                  nome === "orcamento-somente-logo.pdf"
+                    ? ""
+                    : empresaCompleta.nome,
+              }
             : { nome: "Empresa Fictícia Demonstração" }
         }
       />,

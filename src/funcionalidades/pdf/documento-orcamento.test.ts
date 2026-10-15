@@ -25,6 +25,36 @@ const base: DadosDocumentoOrcamento = {
   ],
 };
 describe("paginação do formulário comercial", () => {
+  it("amplia a marca sem nome, omite a descrição e conserva serviços e moldura", () => {
+    const empresa = {
+      nome: "Empresa fictícia",
+      descricaoAtividade: "Atividade que não deve duplicar a marca",
+      logo: "data:image/png;base64,fixture",
+    };
+    const comNome = planejarDocumentoPdf(base, empresa);
+    const semNome = planejarDocumentoPdf(base, { ...empresa, nome: "   " });
+    expect(semNome.gruposIdentidade.nome).toEqual([]);
+    expect(semNome.gruposIdentidade.atividade).toEqual([]);
+    expect(semNome.alturaLogo).toBeGreaterThan(comNome.alturaLogo);
+    expect(semNome.alturaCabecalho).toBeGreaterThanOrEqual(
+      semNome.alturaLogo + 16,
+    );
+    expect(semNome.paginas).toHaveLength(1);
+    expect(semNome.paginas[0].itens.map((linha) => linha.item)).toEqual(
+      base.itens,
+    );
+    expect(semNome.paginas[0].yTabela + semNome.paginas[0].alturaTabela).toBe(
+      720,
+    );
+    expect(comNome.gruposIdentidade.atividade).not.toEqual([]);
+    const semMarca = planejarDocumentoPdf(base, {
+      ...empresa,
+      nome: "",
+      logo: "",
+    });
+    expect(semMarca.alturaLogo).toBe(0);
+    expect(semMarca.identidade).toEqual([]);
+  });
   it("preserva o dia date-only e o dia histórico local", () => {
     expect(
       formatarDataPdf({ ...base, dataEmissao: "2026-10-14T00:00:00Z" }),

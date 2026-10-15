@@ -32,7 +32,7 @@ export const estadosBrasileiros = [
 ] as const;
 export const esquemaEmpresa = z
   .object({
-    nome: z.string().trim().min(1).max(150),
+    nome: z.string().trim().max(150).optional(),
     telefone: textoOpcional(30),
     descricaoAtividade: textoOpcional(300),
     nomeResponsavel: textoOpcional(150),

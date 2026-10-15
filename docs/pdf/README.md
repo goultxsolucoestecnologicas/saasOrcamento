@@ -19,6 +19,14 @@ A composição foi ajustada à referência frontal: cabeçalho horizontal com co
 
 ![Pedido completo com marca d'água](imagens/pedido-completo-logo.png)
 
+## Logo sem nome da empresa
+
+Em Configurações, o nome pode ficar vazio. Nesse caso, o PDF omite o nome e a descrição abaixo da logo e amplia sua área de145×56 para145×90pontos, preservando a proporção e o espaço do cabeçalho. Contatos, redes, slogan e watermark continuam disponíveis. Nome preenchido conserva o formato anterior. Não houve migration: o campo existente aceita string vazia; nome omitido numa atualização é preservado.
+
+![Logo ampliada sem nome ou descrição](imagens/orcamento-somente-logo.png)
+
+[PDF de exemplo somente com logo](exemplos/orcamento-somente-logo.pdf)
+
 ## Campos e persistência
 
 Empresa: `descricaoAtividade`, `nomeResponsavel`, `cidade`, `estado`, `instagram`, `facebook` e `slogan`, todos opcionais. Cliente: `clienteNumeroEndereco` e `clienteInscricaoEstadual`, opcionais, reutilizando nome/endereço/cidade/telefone/documento/observações já existentes. Documento: `tipoDocumento` ORCAMENTO/PEDIDO e `dataEmissao` date-only. Não houve alteração de cálculos ou situações operacionais.
@@ -39,13 +47,13 @@ Observações antecedem a tabela e podem ocupar páginas de continuação quando
 
 ## Testes e revisão
 
-193 testes unitários e 13 administrativos aprovados; lint, typecheck, formato e build de produção aprovados. Integração HTTP real verificou login, tenant/CSRF, cálculos, CRUD, sequência concorrente, paginação 201, logo privada, PDF e suspensão. Teste PostgreSQL confirmou os novos campos, DATE e RLS em transação revertida.
+196 testes unitários e 13 administrativos aprovados; lint, typecheck, formato e build de produção aprovados. Integração HTTP real verificou login, tenant/CSRF, cálculos, CRUD, sequência concorrente, paginação 201, logo privada, PDF e suspensão. Teste PostgreSQL confirmou os novos campos, DATE e RLS em transação revertida.
 
 QA independente: sete grupos E2E aprovados, incluindo pedido com emissão 29/02/2024, número/IE, edição histórica, download com um GET no duplo clique, falha de PDF com AlertDialog, tenant 404, CSRF 403 e UF inválida sem PUT. Cinco larguras 360/390/768/1024/1440 sem overflow ou violações axe nas regras selecionadas; zero erros de página. A configuração foi preenchida somente no navegador para capturas, sem alterar a empresa. A revisão final reutilizou o mesmo documento fictício.
 
 Não existe Designer configurado. O responsável realizou revisão editorial estruturada diretamente contra a fotografia; QA revisou amostras independentemente, sem se apresentar como Designer. Corrigidos: dimensão A4, reservas de linha, unidades longas, fragmentação desnecessária de serviços e cabeçalho vazio excessivo. Suspeitas de contraste durante fade e de divisória numa renderização intermediária foram verificadas no estado final, sem excluir regras. [Parecer QA](QA.md).
 
-Todas as76 páginas das sete amostras passaram na inspeção estrutural: A4, texto dentro da folha, nenhuma folha vazia e rodapé final exclusivo. O caso adversarial confirmou500 caracteres sem espaços,250 linhas de descrição e4000 caracteres de observações preservados. Inspeção visual humana por amostragem de primeiras/intermediárias/últimas páginas confirmou bordas, tipografia, alinhamento, logo, watermark e rodapé; não equivale a examinar visualmente cada folha.
+Todas as 77 páginas das oito amostras passaram na inspeção estrutural: A4, texto dentro da folha, nenhuma folha vazia e rodapé final exclusivo. O caso adversarial confirmou500 caracteres sem espaços,250 linhas de descrição e4000 caracteres de observações preservados. Inspeção visual humana por amostragem de primeiras/intermediárias/últimas páginas confirmou bordas, tipografia, alinhamento, logo, watermark e rodapé; não equivale a examinar visualmente cada folha.
 
 ```powershell
 npm run lint

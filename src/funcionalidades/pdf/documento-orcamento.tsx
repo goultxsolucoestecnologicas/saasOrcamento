@@ -209,6 +209,7 @@ type PaginaPlanejada = {
   alturaTabela: number;
 };
 function linhasEmpresa(empresa: EmpresaDocumento) {
+  const nome = empresa.nome.trim();
   const escala = Object.values(empresa).some(
     (v) => typeof v === "string" && !v.startsWith("data:") && v.length > 100,
   )
@@ -230,8 +231,8 @@ function linhasEmpresa(empresa: EmpresaDocumento) {
         )
       : [];
   return {
-    nome: grupo(empresa.nome, 145, 10, true),
-    atividade: grupo(empresa.descricaoAtividade, 145, 7),
+    nome: grupo(nome, 145, 10, true),
+    atividade: nome ? grupo(empresa.descricaoAtividade, 145, 7) : [],
     telefone: grupo(empresa.telefone, 133, 12, true),
     responsavel: grupo(empresa.nomeResponsavel, 168, 12, true),
     local: grupo(
@@ -315,8 +316,9 @@ export function planejarDocumentoPdf(
 ) {
   const identidade = linhasEmpresa(empresa);
   const escala = identidade.nome[0]?.escala ?? 1;
+  const alturaLogo = empresa.logo ? (identidade.nome.length ? 56 : 90) : 0;
   const alturaEsquerda =
-    (empresa.logo ? 56 : 0) +
+    alturaLogo +
     identidade.nome.length * 12 * escala +
     identidade.atividade.length * 9 * escala;
   const alturaDireita =
@@ -460,6 +462,7 @@ export function planejarDocumentoPdf(
     identidade: Object.values(identidade).flat(),
     gruposIdentidade: identidade,
     alturaCabecalho,
+    alturaLogo,
     clientes,
   };
 }
@@ -602,14 +605,14 @@ export function DocumentoOrcamento({
   orcamento: DadosDocumentoOrcamento;
   empresa: EmpresaDocumento;
 }) {
-  const { paginas, gruposIdentidade, alturaCabecalho, clientes } =
+  const { paginas, gruposIdentidade, alturaCabecalho, alturaLogo, clientes } =
     planejarDocumentoPdf(orcamento, empresa);
   const titulo = orcamento.tipoDocumento === "PEDIDO" ? "Pedido" : "Orçamento";
   const numero = String(orcamento.numero).padStart(5, "0");
   return (
     <Document
       title={`${titulo} ${numero}`}
-      author={empresa.nome}
+      author={empresa.nome.trim() || undefined}
       language="pt-BR"
     >
       {paginas.map((pagina, indice) => (
@@ -617,7 +620,10 @@ export function DocumentoOrcamento({
           <View style={[estilos.cabecalho, { height: alturaCabecalho }]}>
             <View style={{ width: 145, alignItems: "center" }}>
               {empresa.logo && (
-                <Image src={empresa.logo} style={estilos.logo} />
+                <Image
+                  src={empresa.logo}
+                  style={[estilos.logo, { height: alturaLogo }]}
+                />
               )}
               <BlocoIdentidade
                 linhas={gruposIdentidade.nome}

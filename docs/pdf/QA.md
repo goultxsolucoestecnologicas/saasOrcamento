@@ -75,3 +75,11 @@ A inspeção visual é por amostragem e não constitui leitura humana das 76 pá
 `node testes/pdf-comercial-ui.mjs --capturas` terminou com código 0 na build corrigida: seis capturas foram atualizadas sem persistência, usando o mesmo pedido e a mesma conta fictícia. O GET autenticado validou HTTP 200, `application/pdf` e assinatura `%PDF`; a resposta fica no arquivo privado `.tmp/pedido-comercial-real.pdf`.
 
 O principal confirmou na extração do PDF real a preservação das 1.999 linhas A e do marcador AB, além dos blocos de 500 W e 250 X. Isso cobre o defeito de observação cortada que a imagem da primeira página, isoladamente, não demonstrava. Com atividade do cabeçalho restaurada, rótulos/glifos corrigidos, composição inspecionada e endpoint validado, não há bloqueio crítico nas amostras revistas. A impressão física continua pendente.
+
+## Nome opcional e logo ampliada
+
+Verificação pelo responsável: nome vazio/omitido aceito na validação compartilhada, limite de150caracteres mantido e atualização restrita à empresa do contexto. Campo omitido preserva o nome existente; nome vazio remove nome e atividade do bloco da logo no PDF. A logo cresce proporcionalmente de145×56 para145×90pontos; sem logo não há texto substituto.
+
+196 testes unitários, lint, typecheck e build aprovados. O teste no navegador confirmou campo sem obrigatoriedade, instrução acessível, payload vazio e feedback de sucesso; PUT interceptado para não alterar a empresa, com GET posterior confirmando preservação. Axe sem violações nas regras selecionadas. As primeiras tentativas deste roteiro usavam contexto implícito do navegador, incompatível com axe; o contexto explícito corrigiu o roteiro, sem alteração do produto. Não houve nova migration.
+
+A oitava amostra `orcamento-somente-logo.pdf` foi renderizada e inspecionada: logo maior, ausência de nome/descrição, contatos preservados e sem colisão no cabeçalho. Verificador estrutural aprovou as77páginas dos oito exemplos, incluindo preservação de texto no caso extremo.

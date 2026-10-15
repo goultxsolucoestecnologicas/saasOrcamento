@@ -140,11 +140,11 @@ try {
     .waitFor();
   etapa = "configuracoes";
   await pagina.goto("http://localhost:3001/configuracoes");
-  await pagina.getByLabel("Nome da empresa *", { exact: true }).waitFor();
+  await pagina.getByLabel("Nome da empresa", { exact: true }).waitFor();
   await pagina.setViewportSize({ width: 390, height: 844 });
   await fotografia("ui-config-mobile");
   await pagina
-    .getByLabel("Nome da empresa *", { exact: true })
+    .getByLabel("Nome da empresa", { exact: true })
     .fill("Empresa de teste visual atualizada");
   await pagina
     .getByRole("button", { name: "Salvar configurações", exact: true })
