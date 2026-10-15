@@ -1054,6 +1054,7 @@
 }
 .marca {
   min-height: 44px;
+  min-width: 44px;
 }
 /* Rótulos com altura comum mantêm as colunas alinhadas. */
 @media (min-width: 1024px) {

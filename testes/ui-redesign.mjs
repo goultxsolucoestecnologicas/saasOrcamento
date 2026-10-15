@@ -62,8 +62,8 @@ async function acessar(caminho) {
   if (nomeEmpresa && caminho !== "/entrar")
     await pagina.waitForFunction(
       (nome) =>
-        [...document.querySelectorAll(".marca span")].some(
-          (e) => e.textContent === nome,
+        [...document.querySelectorAll(".marca")].some(
+          (e) => e.getAttribute("aria-label") === (nome.trim() || "Orçamentos"),
         ),
       nomeEmpresa,
     );
