@@ -46,6 +46,8 @@
 
 ## Execução autônoma do MVP
 
+- Solicitação posterior autoriza landing comercial pública em `/`, com contato comercial configurável e rotas autenticadas preservadas. Sem checkout, cadastro automático, depoimentos fictícios ou deploy nesta tarefa.
+
 - T02–T10 autorizadas conforme `docs/BACKLOG.md`: assinaturas manuais, autenticação, provisionamento, layout/PWA, CRUD/cálculos, configurações/logo, PDF/compartilhamento, integração e entrega local. Sem gateway, landing comercial, dashboards, Docker ou deploy. Supabase Auth/PostgreSQL foram autorizados posteriormente.
 - Para cada tarefa: definir dependências/aceite, branch de base validada (derivada quando dependente), implementar, verificar, revisar/corrigir com QA, commit e PR quando remoto autorizado disponível. Não marque concluído sem aceite e base utilizável pelas próximas tarefas.
 - Estados persistentes: PENDENTE, EM_ANDAMENTO, EM_REVISAO, CONCLUIDA, BLOQUEADA. Preserve o trabalho válido; não recrie arquitetura. Não execute migrations destrutivas nem altere dados reais sem autorização.

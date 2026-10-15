@@ -49,3 +49,17 @@ Loading representativo somente durante espera real; erro nunca aparece como vazi
 Sem cliente/catálogo novo, pagamentos, gráficos, texturas decorativas ou mudança de cálculos.
 Remoção de logo remoto não existe no contrato: permitir apenas descartar seleção ainda não enviada.
 WCAG2.2AA é alvo;axe/teclado/contraste e viewports verificáveis, sem alegar certificação integral.
+
+## Landing comercial
+
+Conceito: mostrar o caminho do serviço ao PDF com a interface real como evidência.
+Público: prestadores de serviços e pequenas empresas, principalmente no celular.
+Direção: mesma ferramenta utilitária, com composição assimétrica; variância5/movimento2/densidade4.
+Preservar Arial, cores, bordas e raios do aplicativo; regras apenas no namespace landing.
+Hero: texto à esquerda, captura mobile dominante e desktop/PDF complementares; sem números inventados.
+Escala pública: título clamp32–60px, texto16–18px, entrelinhas1.2/1.6; conteúdo máximo1200px.
+Espaçamento público:24px mobile/32px desktop nas bordas, seções64–96px; ações>=44px.
+Plano único:29,99BRL/mês por empresa, até dois usuários; contratação por contato, ativação administrativa.
+Capturas WebP reais com dados fictícios identificados; não consultar dados de empresas na landing.
+Motion: somente entrada discreta e feedback de150–200ms; conteúdo visível sem depender de animação.
+Contato/marca/links legais/origem por configuração; não inventar contato nem documentos quando ausentes.
