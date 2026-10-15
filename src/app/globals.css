@@ -705,7 +705,7 @@
 }
 .configuracoes-secoes {
   display: grid;
-  align-items: start;
+  align-items: stretch;
   gap: 16px;
 }
 .configuracoes .painel {
