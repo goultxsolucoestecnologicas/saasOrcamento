@@ -11,7 +11,16 @@ export default function robots(): MetadataRoute.Robots {
       ? {
           userAgent: "*",
           allow: "/",
-          disallow: ["/entrar", "/orcamentos", "/configuracoes", "/api/"],
+          disallow: [
+            "/entrar",
+            "/orcamentos",
+            "/configuracoes",
+            "/api/",
+            "/admin",
+            "/auth/",
+            "/definir-senha",
+            "/assinatura-indisponivel",
+          ],
         }
       : { userAgent: "*", disallow: "/" },
     ...(origem && permitirIndexacao(origem)

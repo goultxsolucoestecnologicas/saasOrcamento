@@ -75,7 +75,16 @@ describe("configuração pública da landing", () => {
     expect(robots().rules).toEqual({
       userAgent: "*",
       allow: "/",
-      disallow: ["/entrar", "/orcamentos", "/configuracoes", "/api/"],
+      disallow: [
+        "/entrar",
+        "/orcamentos",
+        "/configuracoes",
+        "/api/",
+        "/admin",
+        "/auth/",
+        "/definir-senha",
+        "/assinatura-indisponivel",
+      ],
     });
     expect(robots().sitemap).toBe("https://produto.example/sitemap.xml");
     expect(sitemap()).toEqual([

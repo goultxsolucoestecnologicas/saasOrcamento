@@ -16,7 +16,13 @@ beforeEach(() => {
   });
   mocks.entrar.mockResolvedValue({ error: null });
   mocks.sair.mockResolvedValue({ error: null });
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ dados: { destino: "/orcamentos" } }),
+    }),
+  );
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -40,8 +46,33 @@ describe("Autenticação Supabase do navegador", () => {
       email: "usuario@exemplo.com",
       password: "senha-teste",
     });
-    expect(fetch).toHaveBeenCalledWith("/api/empresa", { cache: "no-store" });
+    expect(fetch).toHaveBeenCalledWith("/api/acesso", { cache: "no-store" });
     expect(mocks.sair).not.toHaveBeenCalled();
+  });
+  it.each(["/admin", "/assinatura-indisponivel"])(
+    "preserva destino autorizado %s",
+    async (destino) => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ dados: { destino } }),
+      } as Response);
+      const { entrarComSenha } = await import("./autenticacao-cliente");
+      expect(await entrarComSenha("usuario@exemplo.com", "senha-teste")).toBe(
+        destino,
+      );
+      expect(mocks.sair).not.toHaveBeenCalled();
+    },
+  );
+  it("rejeita redirecionamento externo mesmo com resposta 200", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ dados: { destino: "https://externo.invalid" } }),
+    } as Response);
+    const { entrarComSenha } = await import("./autenticacao-cliente");
+    await expect(
+      entrarComSenha("usuario@exemplo.com", "senha-teste"),
+    ).rejects.toThrow("acesso indisponível");
+    expect(mocks.sair).toHaveBeenCalled();
   });
   it("encerra a sessão quando a empresa não autoriza o usuário", async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: false, status: 403 } as Response);

@@ -20,7 +20,7 @@ export function obterAutenticacaoCliente(): SupabaseClient {
 export async function entrarComSenha(
   email: string,
   senha: string,
-): Promise<void> {
+): Promise<string> {
   const auth = obterAutenticacaoCliente().auth;
   const mensagem = "E-mail ou senha inválidos, ou acesso indisponível.";
   try {
@@ -30,8 +30,15 @@ export async function entrarComSenha(
     throw new Error(mensagem);
   }
   try {
-    const acesso = await fetch("/api/empresa", { cache: "no-store" });
+    const acesso = await fetch("/api/acesso", { cache: "no-store" });
     if (!acesso.ok) throw new Error(mensagem);
+    const corpo = await acesso.json();
+    const destino = corpo?.dados?.destino;
+    if (
+      !["/admin", "/orcamentos", "/assinatura-indisponivel"].includes(destino)
+    )
+      throw new Error(mensagem);
+    return destino;
   } catch {
     await auth.signOut().catch(() => undefined);
     throw new Error(mensagem);

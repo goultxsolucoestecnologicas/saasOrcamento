@@ -1,0 +1,398 @@
+.admin-estrutura {
+  min-height: 100dvh;
+}
+.admin-marca {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--foreground);
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  min-height: 44px;
+}
+.admin-marca > svg {
+  color: var(--accent-foreground);
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+.admin-marca small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+.admin-sidebar {
+  display: none;
+}
+.admin-mobile {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+}
+.admin-menu {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 60;
+  width: min(340px, 100%);
+  padding: 20px;
+  background: white;
+  overflow-y: auto;
+}
+.admin-menu-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  font-weight: 700;
+  font-size: 20px;
+}
+.admin-links {
+  display: grid;
+  gap: 6px;
+}
+.admin-links a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  text-decoration: none;
+}
+.admin-links a:hover {
+  background: var(--secondary);
+}
+.admin-links a[aria-current] {
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: 600;
+}
+.admin-conteudo {
+  width: 100%;
+  max-width: 1552px;
+  margin: auto;
+  padding: 24px 16px 48px;
+  min-width: 0;
+  outline: none;
+}
+.admin-pagina {
+  display: grid;
+  gap: 24px;
+}
+.admin-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.admin-cabecalho h1 {
+  margin-bottom: 6px;
+}
+.admin-cabecalho p,
+.admin-secundario {
+  color: var(--muted-foreground);
+}
+.admin-acoes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-painel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-painel > h2 {
+  margin-bottom: 8px;
+}
+.admin-painel > p + form,
+.admin-painel > p + .admin-formulario {
+  margin-top: 24px;
+}
+.admin-metricas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.admin-metrica {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-metrica p {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.admin-metrica strong {
+  font-size: 24px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.admin-metrica small {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.admin-metrica-financeira {
+  border-top: 3px solid var(--primary);
+}
+.admin-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+}
+.admin-filtros .campo {
+  flex: 1 1 180px;
+}
+.admin-filtros .admin-busca {
+  flex-basis: 300px;
+}
+.admin-lista {
+  display: grid;
+  gap: 12px;
+}
+.admin-registro {
+  display: grid;
+  gap: 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  min-width: 0;
+}
+.admin-registro-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-registro h2,
+.admin-registro h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.admin-registro a:not([data-slot]) {
+  color: var(--accent-foreground);
+  text-underline-offset: 3px;
+}
+.admin-painel h2 a,
+.admin-registro h2 a,
+.admin-registro h3 a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+}
+.admin-dados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.admin-dados div {
+  min-width: 0;
+}
+.admin-dados dt {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.admin-dados dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.admin-selo {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--secondary);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.admin-selo-ativa,
+.admin-selo-paga {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.admin-selo-suspensa,
+.admin-selo-vencida {
+  background: #fff1f0;
+  color: var(--destructive);
+}
+.admin-selo-pendente {
+  background: #fff5df;
+  color: #775000;
+}
+.admin-formulario {
+  display: grid;
+  gap: 20px;
+}
+.admin-grade {
+  display: grid;
+  gap: 20px;
+}
+.admin-formulario .campo {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.admin-formulario textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.admin-formulario-rodape {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.admin-aviso {
+  border: 1px solid var(--border);
+  background: var(--secondary);
+  border-radius: 6px;
+  padding: 12px 16px;
+  color: var(--muted-foreground);
+}
+.admin-abas {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+.admin-abas a {
+  padding: 10px 14px;
+  min-height: 44px;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  border-radius: 6px;
+}
+.admin-abas a[aria-current] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 600;
+}
+.admin-vazio {
+  text-align: center;
+  padding: 40px 20px;
+}
+.admin-vazio h2 {
+  justify-content: center;
+}
+.admin-carregando {
+  display: grid;
+  gap: 16px;
+}
+.admin-carregando .skeleton {
+  height: 120px;
+}
+.admin-historico {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  list-style: none;
+}
+.admin-historico li {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.admin-historico li:last-child {
+  border: 0;
+  padding-bottom: 0;
+}
+.admin-valor {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+@media (min-width: 640px) {
+  .admin-conteudo {
+    padding: 32px 24px 48px;
+  }
+  .admin-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-largura-total {
+    grid-column: 1/-1;
+  }
+  .admin-metricas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .admin-painel {
+    padding: 24px;
+  }
+}
+@media (min-width: 1024px) {
+  .admin-mobile {
+    display: none;
+  }
+  .admin-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 232px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    background: white;
+    border-right: 1px solid var(--border);
+  }
+  .admin-sidebar-rodape {
+    margin-top: auto;
+    display: grid;
+    gap: 12px;
+  }
+  .admin-sidebar-rodape p {
+    color: var(--muted-foreground);
+    font-size: 12px;
+    padding: 0 12px;
+  }
+  .admin-conteudo {
+    margin-left: 232px;
+    width: calc(100% - 232px);
+    padding: 32px;
+  }
+  .admin-registro {
+    grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr) auto;
+    align-items: center;
+  }
+  .admin-registro-topo {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .admin-registro .admin-dados {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .admin-lista-compacta .admin-registro {
+    grid-template-columns: 1fr auto;
+  }
+  .admin-metricas {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .admin-links a,
+  .admin-abas a {
+    transition: background-color 150ms ease-out;
+  }
+}

@@ -12,7 +12,8 @@ export default async function LayoutSistema({
   try {
     await executarNaEmpresa(async () => undefined);
   } catch (erro) {
-    if (erro instanceof ErroAcessoEmpresa) redirect("/entrar");
+    if (erro instanceof ErroAcessoEmpresa)
+      redirect(erro.status === 401 ? "/entrar" : "/assinatura-indisponivel");
     throw erro;
   }
   return <EstruturaApp>{children}</EstruturaApp>;

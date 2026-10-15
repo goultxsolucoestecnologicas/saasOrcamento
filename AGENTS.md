@@ -18,7 +18,15 @@
 
 - Prisma runtime usa DATABASE_URL; migrations usam DIRECT_URL. Confirme desenvolvimento antes de DDL remoto. Nunca execute reset/drop ou migre produção automaticamente.
 - Supabase Auth verifica getUser no servidor; empresa vem do vínculo idAutenticacaoSupabase no banco. RLS sem policies bloqueia Data API anon/authenticated; Prisma aplica autorização própria. Não vincule por email/metadata do navegador nem migre senhas legadas automaticamente.
-- SUPABASE_SECRET_KEY é exclusiva do CLI administrativo. Não criar contas Auth externas/fixtures remotas sem autorização específica.
+- SUPABASE_SECRET_KEY é restrita ao servidor/CLI administrativo; o painel autorizado posteriormente pode usá-la somente em módulos server-only de convites. Nunca enviar ao navegador ou registrar segredos. Não criar fixtures Auth externas sem autorização específica.
+
+## Administração da plataforma
+
+- Solicitação posterior autoriza `/admin` e APIs administrativas: cobrança manual Pix, assinantes, usuários, tolerância e auditoria. Sem gateway, cron de produção, exclusão física ou deploy.
+- Administrador global é `AdminPlataforma`, independente de usuários de empresas. Toda operação global exige identidade Supabase verificada e papel ativo no banco via `executarComoAdministrador`; operações comuns mantêm `executarNaEmpresa`.
+- Exceções de infraestrutura de acesso global são explícitas no ESLint. Nenhum papel pode vir do navegador ou metadata. Concessão de administrador somente por CLI autorizado, nunca endpoint público.
+- Empresa, assinatura, cobrança inicial e reserva de convite são transacionais. Envio Auth é etapa externa durável, sem senha temporária; falha fica visível e reenviável. Convites pendentes reservam vagas.
+- Quitação manual é transacional e idempotente; pagamentos confirmados, receita contratada e pendências são conceitos separados. Datas de vencimento usam DATE e calendário America/Sao_Paulo. Suspensão é manual e preserva todos os dados.
 
 ## Trabalho e validação
 

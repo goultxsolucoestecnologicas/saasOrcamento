@@ -8,24 +8,26 @@ datasource db {
 }
 
 model Empresa {
-  idEmpresa              String      @id @default(uuid()) @map("id_empresa")
-  nome                   String      @map("nome")
-  telefone               String?     @map("telefone")
-  logoChave              String?     @map("logo_chave")
-  descricaoAtividade     String?     @map("descricao_atividade")
-  nomeResponsavel        String?     @map("nome_responsavel")
-  cidade                 String?     @map("cidade")
-  estado                 String?     @map("estado")
-  instagram              String?     @map("instagram")
-  facebook               String?     @map("facebook")
-  slogan                 String?     @map("slogan")
-  proximoNumeroOrcamento Int         @default(1) @map("proximo_numero_orcamento")
-  ativa                  Boolean     @default(true) @map("ativa")
-  dataCriacao            DateTime    @default(now()) @map("data_criacao")
-  dataAtualizacao        DateTime    @updatedAt @map("data_atualizacao")
+  idEmpresa              String                  @id @default(uuid()) @map("id_empresa")
+  nome                   String                  @map("nome")
+  telefone               String?                 @map("telefone")
+  logoChave              String?                 @map("logo_chave")
+  descricaoAtividade     String?                 @map("descricao_atividade")
+  nomeResponsavel        String?                 @map("nome_responsavel")
+  cidade                 String?                 @map("cidade")
+  estado                 String?                 @map("estado")
+  instagram              String?                 @map("instagram")
+  facebook               String?                 @map("facebook")
+  slogan                 String?                 @map("slogan")
+  proximoNumeroOrcamento Int                     @default(1) @map("proximo_numero_orcamento")
+  ativa                  Boolean                 @default(true) @map("ativa")
+  dataCriacao            DateTime                @default(now()) @map("data_criacao")
+  dataAtualizacao        DateTime                @updatedAt @map("data_atualizacao")
   usuarios               Usuario[]
   assinatura             Assinatura?
   orcamentos             Orcamento[]
+  cobrancas              Cobranca[]
+  convites               ConviteAdministrativo[]
 
   @@map("empresa")
 }
@@ -101,6 +103,7 @@ model Verificacao {
 enum SituacaoAssinatura {
   ATIVA
   SUSPENSA
+  CANCELADA
 
   @@map("situacao_assinatura")
 }
@@ -142,7 +145,11 @@ model Assinatura {
   dataCriacao          DateTime           @default(now()) @map("data_criacao")
   dataAtualizacao      DateTime           @updatedAt @map("data_atualizacao")
   empresa              Empresa            @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
+  dataInicio           DateTime?          @map("data_inicio") @db.Date
+  dataDireitoAcesso    DateTime?          @map("data_direito_acesso") @db.Date
+  cobrancas            Cobranca[]
 
+  @@unique([idEmpresa, idAssinatura])
   @@map("assinatura")
 }
 
@@ -192,4 +199,105 @@ model OrcamentoItem {
 
   @@index([idEmpresa, idOrcamento, ordem])
   @@map("orcamento_item")
+}
+
+model AdminPlataforma {
+  idAdmin     String                    @id @default(uuid()) @map("id_admin")
+  idSupabase  String                    @unique @map("id_supabase") @db.Uuid
+  nome        String                    @map("nome")
+  ativo       Boolean                   @default(true) @map("ativo")
+  dataCriacao DateTime                  @default(now()) @map("data_criacao")
+  auditorias  AuditoriaAdministrativa[]
+  pagamentos  Pagamento[]
+
+  @@map("admin_plataforma")
+}
+
+model ConfiguracaoAdministrativa {
+  id                   String  @id @default("principal") @map("id")
+  nomePlano            String  @default("Profissional") @map("nome_plano")
+  valorMensalCentavos  Int     @default(2999) @map("valor_mensal_centavos")
+  limiteUsuariosAtivos Int     @default(2) @map("limite_usuarios_ativos")
+  toleranciaDias       Int     @default(3) @map("tolerancia_dias")
+  nomeComercial        String  @default("OrçaFácil") @map("nome_comercial")
+  contatoComercial     String? @map("contato_comercial")
+
+  @@map("configuracao_administrativa")
+}
+
+enum SituacaoCobranca {
+  PENDENTE
+  PAGA
+  CANCELADA
+
+  @@map("situacao_cobranca")
+}
+
+model Cobranca {
+  idCobranca           String           @id @default(uuid()) @map("id_cobranca")
+  idEmpresa            String           @map("id_empresa")
+  idAssinatura         String           @map("id_assinatura")
+  valorCentavos        Int              @map("valor_centavos")
+  dataEmissao          DateTime         @default(now()) @map("data_emissao")
+  dataVencimento       DateTime         @map("data_vencimento") @db.Date
+  acessoAte            DateTime         @map("acesso_ate") @db.Date
+  situacao             SituacaoCobranca @default(PENDENTE) @map("situacao")
+  observacoes          String?          @map("observacoes")
+  provedor             String?          @map("provedor")
+  identificadorExterno String?          @map("identificador_externo")
+  empresa              Empresa          @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
+  assinatura           Assinatura       @relation(fields: [idEmpresa, idAssinatura], references: [idEmpresa, idAssinatura], onDelete: Restrict)
+  pagamento            Pagamento?
+
+  @@unique([provedor, identificadorExterno])
+  @@index([idEmpresa, dataVencimento])
+  @@index([situacao, dataVencimento])
+  @@map("cobranca")
+}
+
+model Pagamento {
+  idPagamento             String          @id @default(uuid()) @map("id_pagamento")
+  idCobranca              String          @unique @map("id_cobranca")
+  valorCentavos           Int             @map("valor_centavos")
+  formaPagamento          String          @default("PIX") @map("forma_pagamento")
+  dataPagamento           DateTime        @map("data_pagamento") @db.Date
+  dataConfirmacao         DateTime        @default(now()) @map("data_confirmacao")
+  idAdmin                 String          @map("id_admin")
+  provedor                String?         @map("provedor")
+  identificadorExterno    String?         @map("identificador_externo")
+  referenciaEventoExterno String?         @unique @map("referencia_evento_externo")
+  cobranca                Cobranca        @relation(fields: [idCobranca], references: [idCobranca], onDelete: Restrict)
+  administrador           AdminPlataforma @relation(fields: [idAdmin], references: [idAdmin], onDelete: Restrict)
+
+  @@unique([provedor, identificadorExterno])
+  @@map("pagamento")
+}
+
+model AuditoriaAdministrativa {
+  idAuditoria   String          @id @default(uuid()) @map("id_auditoria")
+  idAdmin       String          @map("id_admin")
+  acao          String          @map("acao")
+  entidade      String          @map("entidade")
+  idEntidade    String          @map("id_entidade")
+  informacoes   Json            @map("informacoes")
+  dataCriacao   DateTime        @default(now()) @map("data_criacao")
+  administrador AdminPlataforma @relation(fields: [idAdmin], references: [idAdmin], onDelete: Restrict)
+
+  @@index([entidade, idEntidade, dataCriacao])
+  @@map("auditoria_administrativa")
+}
+
+model ConviteAdministrativo {
+  dataTentativa DateTime? @map("data_tentativa")
+  empresa       Empresa   @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
+  idConvite     String    @id @default(uuid()) @map("id_convite")
+  idEmpresa     String    @map("id_empresa")
+  nome          String    @map("nome")
+  email         String    @unique @map("email")
+  idSupabase    String?   @map("id_supabase") @db.Uuid
+  situacao      String    @default("PENDENTE") @map("situacao")
+  dataCriacao   DateTime  @default(now()) @map("data_criacao")
+
+  @@index([idEmpresa, situacao])
+  @@map("convite_administrativo")
 }

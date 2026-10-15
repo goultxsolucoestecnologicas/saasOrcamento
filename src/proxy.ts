@@ -27,6 +27,12 @@ export async function proxy(requisicao: NextRequest) {
 export const config = {
   matcher: [
     "/entrar",
+    "/admin/:path*",
+    "/api/admin/:path*",
+    "/api/acesso/:path*",
+    "/auth/:path*",
+    "/definir-senha",
+    "/assinatura-indisponivel",
     "/orcamentos/:path*",
     "/configuracoes/:path*",
     "/api/empresa/:path*",

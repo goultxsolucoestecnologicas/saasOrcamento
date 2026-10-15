@@ -15,6 +15,10 @@ export default defineConfig([
       "src/bibliotecas/contexto-empresa.ts",
       "src/bibliotecas/dados-empresa.ts",
       "src/bibliotecas/escopo-empresa.ts",
+      // Infraestrutura global: autoriza a identidade verificada antes de acessar empresas.
+      "src/bibliotecas/admin-autorizacao.ts",
+      "src/bibliotecas/destino-acesso.ts",
+      "src/servicos/admin.ts",
       "src/**/*.test.ts",
     ],
     rules: {
