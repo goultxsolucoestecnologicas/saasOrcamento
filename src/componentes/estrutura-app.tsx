@@ -42,8 +42,14 @@ export function EstruturaApp({ children }: { children: React.ReactNode }) {
     m.addEventListener("change", fechar);
     return () => m.removeEventListener("change", fechar);
   }, []);
+  const nomeMarca = empresa?.nome?.trim() || "Orçamentos";
   const marca = (
-    <Link className="marca" href="/orcamentos" onClick={() => setMenu(false)}>
+    <Link
+      className="marca"
+      href="/orcamentos"
+      aria-label={nomeMarca}
+      onClick={() => setMenu(false)}
+    >
       {empresa?.logoChave && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -53,7 +59,7 @@ export function EstruturaApp({ children }: { children: React.ReactNode }) {
           height={32}
         />
       )}
-      <span title={empresa?.nome}>{empresa?.nome || "Orçamentos"}</span>
+      {!empresa?.logoChave && <span title={empresa?.nome}>{nomeMarca}</span>}
     </Link>
   );
   const links = (

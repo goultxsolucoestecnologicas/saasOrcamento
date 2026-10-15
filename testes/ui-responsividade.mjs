@@ -106,7 +106,7 @@ async function carregar(caminho, alvo) {
   await pagina.goto(origem + caminho);
   await pagina.locator(alvo).first().waitFor({ state: "visible" });
   if (caminho !== "/entrar")
-    await pagina.locator(".marca span").first().waitFor({ state: "attached" });
+    await pagina.locator(".marca").first().waitFor({ state: "attached" });
   await pagina.evaluate(() => document.fonts.ready);
 }
 async function geometria(nome) {

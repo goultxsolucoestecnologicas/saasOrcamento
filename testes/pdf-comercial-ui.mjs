@@ -87,8 +87,9 @@ async function largura() {
 async function foto(tipo, nome) {
   await page.waitForFunction(
     (empresa) =>
-      [...document.querySelectorAll(".marca span")].some(
-        (e) => e.textContent === empresa,
+      [...document.querySelectorAll(".marca")].some(
+        (e) =>
+          e.getAttribute("aria-label") === (empresa.trim() || "Orçamentos"),
       ),
     nomeEmpresa,
   );
