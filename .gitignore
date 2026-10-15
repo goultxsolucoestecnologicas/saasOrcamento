@@ -14,3 +14,5 @@ uploads/
 .DS_Store
 Thumbs.db
 .tmp/
+# Fotografia original contém contatos reais; preservar somente no workspace.
+docs/referencias/formulario-fisico.png

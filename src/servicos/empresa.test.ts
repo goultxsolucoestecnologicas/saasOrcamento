@@ -58,3 +58,19 @@ it("associa limites e obrigatoriedade aos campos sem expor chaves extras", async
   });
   expect(simulacoes.update).not.toHaveBeenCalled();
 });
+
+it("persiste identidade comercial e preserva campos omitidos por clientes legados", async () => {
+  await atualizarEmpresa({
+    nome: "Empresa",
+    descricaoAtividade: " Instalação ",
+    estado: "rs",
+    slogan: null,
+  });
+  const data = simulacoes.update.mock.calls[0][0].data;
+  expect(data).toMatchObject({
+    descricaoAtividade: "Instalação",
+    estado: "RS",
+    slogan: null,
+  });
+  expect(data).not.toHaveProperty("instagram");
+});

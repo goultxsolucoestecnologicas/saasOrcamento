@@ -12,6 +12,7 @@ import {
 } from "@/componentes/feedback";
 import { Button } from "@/componentes/ui/button";
 import { OrcamentoUi, reais, requisitar } from "@/bibliotecas/api-cliente";
+import { dataCivilSaoPaulo } from "@/validacoes/orcamento";
 export function DetalheOrcamento({
   id,
   mostrarPdf = false,
@@ -45,6 +46,8 @@ export function DetalheOrcamento({
       ativo = false;
     };
   }, [id, tentativa]);
+  const nomeDocumento =
+    orcamento?.tipoDocumento === "PEDIDO" ? "Pedido" : "Orçamento";
   async function baixar(compartilhar: boolean) {
     if (trava.current) return;
     trava.current = true;
@@ -63,9 +66,13 @@ export function DetalheOrcamento({
         throw new Error("Não foi possível gerar o PDF.");
       }
       const blob = await resposta.blob();
-      const arquivo = new File([blob], `orcamento-${orcamento?.numero}.pdf`, {
-        type: "application/pdf",
-      });
+      const arquivo = new File(
+        [blob],
+        `${orcamento?.tipoDocumento === "PEDIDO" ? "pedido" : "orcamento"}-${orcamento?.numero}.pdf`,
+        {
+          type: "application/pdf",
+        },
+      );
       if (
         compartilhar &&
         navigator.canShare?.({ files: [arquivo] }) &&
@@ -73,7 +80,7 @@ export function DetalheOrcamento({
       ) {
         await navigator.share({
           files: [arquivo],
-          title: `Orçamento ${orcamento?.numero}`,
+          title: `${nomeDocumento} ${orcamento?.numero}`,
         });
       } else {
         const url = URL.createObjectURL(blob);
@@ -113,7 +120,7 @@ export function DetalheOrcamento({
       ) : orcamento ? (
         <>
           <PageHeader
-            titulo={`Orçamento #${String(orcamento.numero).padStart(5, "0")}`}
+            titulo={`${nomeDocumento} #${String(orcamento.numero).padStart(5, "0")}`}
           >
             <span className="status">
               {{
@@ -130,10 +137,29 @@ export function DetalheOrcamento({
               <h2>Resumo do orçamento</h2>
               <div className="dados-cliente">
                 <strong>{orcamento.clienteNome}</strong>
-                <p>{orcamento.clienteEndereco}</p>
+                <p>
+                  {[orcamento.clienteEndereco, orcamento.clienteNumeroEndereco]
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
                 <p>{orcamento.clienteCidade}</p>
                 <p>{orcamento.clienteDocumento}</p>
                 <p>{orcamento.clienteTelefone}</p>
+                {orcamento.clienteInscricaoEstadual && (
+                  <p>
+                    Inscrição Estadual: {orcamento.clienteInscricaoEstadual}
+                  </p>
+                )}
+                <p className="texto-secundario">
+                  Emissão:{" "}
+                  {(
+                    orcamento.dataEmissao?.slice(0, 10) ??
+                    dataCivilSaoPaulo(orcamento.dataCriacao)
+                  )
+                    .split("-")
+                    .reverse()
+                    .join("/")}
+                </p>
               </div>
               <h2>Itens</h2>
               {orcamento.itens.map((i, n) => (
@@ -163,7 +189,7 @@ export function DetalheOrcamento({
                 </div>
               )}
               <div className="total">
-                <span>Total do orçamento</span>
+                <span>Total do {nomeDocumento.toLowerCase()}</span>
                 <strong>{reais(orcamento.totalCentavos)}</strong>
               </div>
               {orcamento.observacoes && (
@@ -221,7 +247,7 @@ export function DetalheOrcamento({
             <section className="painel">
               <h2>Documento PDF</h2>
               <p className="texto-secundario">
-                Baixe ou compartilhe o orçamento com seu cliente.
+                Baixe ou compartilhe o documento com seu cliente.
               </p>
               <div className="acoes-pdf">
                 <Button disabled={ocupado} onClick={() => baixar(false)}>

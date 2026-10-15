@@ -286,3 +286,65 @@ describe("orçamentos com escopo obrigatório", () => {
     expect(simulacoes.transacao.orcamento.findFirst).not.toHaveBeenCalled();
   });
 });
+
+it("novo documento usa data civil padrão e tipo orçamento", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-14T01:00:00Z"));
+  simulacoes.transacao.empresa.update.mockResolvedValue({
+    proximoNumeroOrcamento: 2,
+  });
+  try {
+    await criarOrcamento(dados);
+    const data = simulacoes.transacao.orcamento.create.mock.lastCall![0].data;
+    expect(data.tipoDocumento).toBe("ORCAMENTO");
+    expect(data.dataEmissao.toISOString()).toBe("2026-10-13T00:00:00.000Z");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+it("persistência mantém data histórica UTC e pedido independente do status", async () => {
+  simulacoes.transacao.empresa.update.mockResolvedValue({
+    proximoNumeroOrcamento: 2,
+  });
+  await criarOrcamento({
+    ...dados,
+    dataEmissao: "2024-02-29",
+    tipoDocumento: "PEDIDO",
+    situacao: "RASCUNHO",
+    clienteNumeroEndereco: "240",
+    clienteInscricaoEstadual: "ISENTO",
+  });
+  const data = simulacoes.transacao.orcamento.create.mock.lastCall![0].data;
+  expect(data.dataEmissao.toISOString()).toBe("2024-02-29T00:00:00.000Z");
+  expect(data.tipoDocumento).toBe("PEDIDO");
+  expect(data.situacao).toBe("RASCUNHO");
+  expect(data.clienteNumeroEndereco).toBe("240");
+});
+it("edição por API antiga preserva data, tipo e campos adicionais", async () => {
+  simulacoes.transacao.orcamento.updateMany.mockResolvedValue({ count: 1 });
+  simulacoes.transacao.orcamento.findFirst.mockResolvedValue({ idOrcamento });
+  await atualizarOrcamento(idOrcamento, dados);
+  const data = simulacoes.transacao.orcamento.updateMany.mock.lastCall![0].data;
+  for (const campo of [
+    "dataEmissao",
+    "tipoDocumento",
+    "clienteNumeroEndereco",
+    "clienteInscricaoEstadual",
+  ])
+    expect(data).not.toHaveProperty(campo);
+});
+it("edição explícita altera data sem mutação por fuso e permite limpar opcionais", async () => {
+  simulacoes.transacao.orcamento.updateMany.mockResolvedValue({ count: 1 });
+  simulacoes.transacao.orcamento.findFirst.mockResolvedValue({ idOrcamento });
+  await atualizarOrcamento(idOrcamento, {
+    ...dados,
+    dataEmissao: "2020-12-31",
+    tipoDocumento: "PEDIDO",
+    clienteNumeroEndereco: null,
+    clienteInscricaoEstadual: null,
+  });
+  const data = simulacoes.transacao.orcamento.updateMany.mock.lastCall![0].data;
+  expect(data.dataEmissao.toISOString()).toBe("2020-12-31T00:00:00.000Z");
+  expect(data.tipoDocumento).toBe("PEDIDO");
+  expect(data.clienteNumeroEndereco).toBeNull();
+});

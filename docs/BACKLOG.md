@@ -19,12 +19,16 @@ Remoto autorizado: github.com/goultxsolucoestecnologicas/saasOrcamento. GitHub C
 
 ## Supabase
 
-Ambiente confirmado pelo usuário como exclusivamente desenvolvimento. DATABASE_URL/runtime e DIRECT_URL/migrations conectados. Seis migrations não destrutivas aplicadas, RLS nas8tabelas de domínio/legado e nos metadados Prisma, Prisma7 gerado. Duas identidades fictícias e schema de testes remoto autorizados explicitamente e provisionados; preservados sem exclusão. Credenciais somente em .tmp ignorado. Chave administrativa disponível; chave pública corrigida e validada com200. Cadastro público permanece habilitado; usuário confirmou que irá desativá-lo no painel Supabase. Regressão Supabase aprovada: login/logout, autorização tenant/CSRF, cálculos/CRUD, sequência, paginação201registros, logo/PDF, suspensão, formulário/configurações e PWA. Larguras320/390/768/1024/1440px verificadas. Aplicação principal3000 ainda sem usuário; demonstração3001 usa schema de teste e credenciais em .tmp/acesso-demonstracao.txt.
+Ambiente confirmado pelo usuário como exclusivamente desenvolvimento. DATABASE_URL/runtime e DIRECT_URL/migrations conectados. Seis migrations não destrutivas aplicadas, RLS nas8tabelas de domínio/legado e nos metadados Prisma, Prisma7 gerado. Duas identidades fictícias e schema de testes remoto autorizados explicitamente e provisionados; preservados sem exclusão. Credenciais somente em .tmp ignorado. Chave administrativa disponível; chave pública corrigida e validada com200. Cadastro público permanece habilitado; usuário confirmou que irá desativá-lo no painel Supabase. Regressão Supabase aprovada: login/logout, autorização tenant/CSRF, cálculos/CRUD, sequência, paginação 201registros, logo/PDF, suspensão, formulário/configurações e PWA. Larguras320/390/768/1024/1440px verificadas. Aplicação principal3000 ainda sem usuário; demonstração3001 usa schema de teste e credenciais em .tmp/acesso-demonstracao.txt.
 
 ## Reformulação UI/UX
 
 EM_REVISAO: branch `feat/ui-ux-redesign-mobile-first`, baseada em `t12-validacao-supabase`. Auditoria anterior à implementação, tokens e referência preservados, revisão visual estruturada (Designer não configurado), duas revisões QA e rodada consolidada aprovadas. 150 testes unitários e13 administrativos, lint, TypeScript, build e integração real aprovados. Cinco viewports sem overflow ou violações axe nas regras selecionadas;12capturas reais e limitações em `docs/ui/README.md`. Nenhuma migration ou exclusão executada nesta etapa. PR da etapa permanece sem merge automático.
 
+## PDF comercial conforme modelo físico
+
+EM_REVISAO: branch `feat/pdf-orcamento-modelo-comercial`, baseada na reformulação UI (PR4). Identidade comercial opcional, número/IE, tipo e emissão histórica integrados. Migration somente aditiva aplicada no desenvolvimento confirmado; testes de persistência/RLS revertidos. 192 unitários, 13 administrativos, lint/TS/build e HTTP real aprovados. Sete grupos E2E e revisão editorial independente; sete PDFs reais (77 páginas verificadas), capturas e limitações em `docs/pdf/README.md`. Sem merge automático.
+
 ## Fora do escopo
 
-Gateway, landing comercial, dashboard, outros serviços de nuvem, Docker, deploy e customização de modelos PDF. Não alterar dados reais nem resetar banco.
+Gateway, landing comercial, dashboard, outros serviços de nuvem, Docker e deploy. Não alterar dados reais nem resetar banco.

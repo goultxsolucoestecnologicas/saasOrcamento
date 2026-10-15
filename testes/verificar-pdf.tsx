@@ -1,4 +1,5 @@
 import React from "react";
+import sharp from "sharp";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { renderToBuffer } from "@react-pdf/renderer";
@@ -75,15 +76,90 @@ export const amostraCemItensCurtosPdf: DadosDocumentoOrcamento = {
 
 export async function gerarAmostrasPdf(diretorio = resolve(".tmp")) {
   await mkdir(diretorio, { recursive: true });
+  const logo =
+    "data:image/png;base64," +
+    (
+      await sharp(
+        Buffer.from(
+          ' <svg xmlns="http://www.w3.org/2000/svg" width="420" height="220"><rect x="6" y="6" width="408" height="208" rx="8" fill="white" stroke="#171717" stroke-width="6"/><path d="M35 160V65h70v95zM120 160V35h40v125z" fill="#555"/><text x="185" y="100" font-family="sans-serif" font-size="42" font-weight="bold">DEMO</text><text x="185" y="135" font-family="sans-serif" font-size="18">SERVIÇOS</text></svg> ',
+        ),
+      )
+        .png()
+        .toBuffer()
+    ).toString("base64");
+  const empresaCompleta = {
+    nome: "Empresa Fictícia Demonstração",
+    telefone: "(00) 00000-0000",
+    descricaoAtividade: "Instalação e acabamento de pisos",
+    nomeResponsavel: "Responsável fictício",
+    cidade: "Cidade Exemplo",
+    estado: "RS",
+    instagram: "@empresa.ficticia",
+    facebook: "Empresa Fictícia",
+    slogan: "Qualidade em cada acabamento.",
+    logo,
+  };
   for (const [nome, orcamento] of [
     ["orcamento-teste.pdf", amostraPdf],
     ["orcamento-extenso.pdf", amostraExtensaPdf],
     ["orcamento-cem-itens-curtos.pdf", amostraCemItensCurtosPdf],
-  ] as const) {
+    [
+      "pedido-completo-logo.pdf",
+      {
+        ...amostraPdf,
+        tipoDocumento: "PEDIDO",
+        dataEmissao: "2026-10-14T00:00:00Z",
+        clienteEndereco: "Rua de teste",
+        clienteNumeroEndereco: "240",
+        clienteInscricaoEstadual: "ISENTO",
+      },
+    ],
+    [
+      "orcamento-simples-sem-logo.pdf",
+      {
+        ...amostraPdf,
+        observacoes: null,
+        clienteDocumento: null,
+        clienteTelefone: null,
+        clienteEndereco: null,
+        clienteCidade: null,
+        validadeDias: null,
+        descontoValor: 0,
+        subtotalCentavos: 157500,
+        totalCentavos: 157500,
+        itens: [amostraPdf.itens[0]],
+      },
+    ],
+    [
+      "orcamento-varios-itens-logo.pdf",
+      {
+        ...amostraCemItensCurtosPdf,
+        itens: amostraCemItensCurtosPdf.itens.slice(0, 12),
+        subtotalCentavos: 54000,
+        totalCentavos: 54000,
+        descontoValor: 0,
+      },
+    ],
+    [
+      "orcamento-quebras-extremas.pdf",
+      {
+        ...amostraPdf,
+        observacoes: "A\n".repeat(1999) + "AB",
+        itens: [
+          { ...amostraPdf.itens[0], descricao: "W".repeat(500) },
+          { ...amostraPdf.itens[1], descricao: "X\n".repeat(249) + "X" },
+        ],
+      },
+    ],
+  ] as Array<[string, DadosDocumentoOrcamento]>) {
     const buffer = await renderToBuffer(
       <DocumentoOrcamento
         orcamento={orcamento}
-        empresa={{ nome: "Empresa de teste", telefone: "Telefone de teste" }}
+        empresa={
+          nome.includes("logo") && !nome.includes("sem-logo")
+            ? empresaCompleta
+            : { nome: "Empresa Fictícia Demonstração" }
+        }
       />,
     );
     if (buffer.subarray(0, 4).toString() !== "%PDF")
@@ -94,4 +170,8 @@ export async function gerarAmostrasPdf(diretorio = resolve(".tmp")) {
 }
 
 if (process.argv[1]?.replaceAll("\\", "/").endsWith("/verificar-pdf.tsx"))
-  await gerarAmostrasPdf();
+  await gerarAmostrasPdf(
+    process.argv.includes("--evidencias")
+      ? resolve("docs/pdf/exemplos")
+      : resolve(".tmp"),
+  );

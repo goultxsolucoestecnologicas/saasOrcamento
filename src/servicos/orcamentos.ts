@@ -2,7 +2,11 @@ import "server-only";
 import { executarComDadosDaEmpresa } from "@/bibliotecas/dados-empresa";
 import { ErroDominio } from "@/bibliotecas/erro-dominio";
 import { calcularOrcamento } from "@/funcionalidades/orcamentos/calculos";
-import { esquemaIdOrcamento, esquemaOrcamento } from "@/validacoes/orcamento";
+import {
+  esquemaIdOrcamento,
+  esquemaOrcamento,
+  dataCivilSaoPaulo,
+} from "@/validacoes/orcamento";
 import { traduzirErrosValidacao } from "@/validacoes/mensagens-validacao";
 
 const incluirItens = { itens: { orderBy: { ordem: "asc" as const } } };
@@ -21,11 +25,14 @@ function prepararOrcamento(entrada: unknown) {
       400,
       traduzirErrosValidacao(resultado.error.issues),
     );
-  const { itens, ...dados } = resultado.data;
+  const { itens, dataEmissao, ...dados } = resultado.data;
   const calculo = calcularOrcamento({ ...dados, itens });
   return {
     dados: {
       ...dados,
+      ...(dataEmissao !== undefined
+        ? { dataEmissao: new Date(dataEmissao + "T00:00:00.000Z") }
+        : {}),
       clienteTelefone: dados.clienteTelefone ?? null,
       clienteEndereco: dados.clienteEndereco ?? null,
       clienteCidade: dados.clienteCidade ?? null,
@@ -114,6 +121,9 @@ export async function criarOrcamento(entrada: unknown) {
     return transacao.orcamento.create({
       data: {
         ...dados,
+        tipoDocumento: dados.tipoDocumento ?? "ORCAMENTO",
+        dataEmissao:
+          dados.dataEmissao ?? new Date(dataCivilSaoPaulo() + "T00:00:00.000Z"),
         numero: empresa.proximoNumeroOrcamento - 1,
         idEmpresa: contexto.idEmpresa,
         itens: {

@@ -12,6 +12,13 @@ model Empresa {
   nome                   String      @map("nome")
   telefone               String?     @map("telefone")
   logoChave              String?     @map("logo_chave")
+  descricaoAtividade     String?     @map("descricao_atividade")
+  nomeResponsavel        String?     @map("nome_responsavel")
+  cidade                 String?     @map("cidade")
+  estado                 String?     @map("estado")
+  instagram              String?     @map("instagram")
+  facebook               String?     @map("facebook")
+  slogan                 String?     @map("slogan")
   proximoNumeroOrcamento Int         @default(1) @map("proximo_numero_orcamento")
   ativa                  Boolean     @default(true) @map("ativa")
   dataCriacao            DateTime    @default(now()) @map("data_criacao")
@@ -108,6 +115,13 @@ enum SituacaoOrcamento {
   @@map("situacao_orcamento")
 }
 
+enum TipoDocumento {
+  ORCAMENTO
+  PEDIDO
+
+  @@map("tipo_documento")
+}
+
 enum TipoDesconto {
   FIXO
   PERCENTUAL
@@ -133,26 +147,30 @@ model Assinatura {
 }
 
 model Orcamento {
-  idOrcamento      String            @id @default(uuid()) @map("id_orcamento")
-  idEmpresa        String            @map("id_empresa")
-  numero           Int               @map("numero")
-  situacao         SituacaoOrcamento @default(RASCUNHO) @map("situacao")
-  clienteNome      String            @map("cliente_nome")
-  clienteTelefone  String?           @map("cliente_telefone")
-  clienteEndereco  String?           @map("cliente_endereco")
-  clienteCidade    String?           @map("cliente_cidade")
-  clienteDocumento String?           @map("cliente_documento")
-  observacoes      String?           @map("observacoes")
-  validadeDias     Int?              @map("validade_dias")
-  descontoTipo     TipoDesconto      @default(FIXO) @map("desconto_tipo")
+  idOrcamento              String            @id @default(uuid()) @map("id_orcamento")
+  idEmpresa                String            @map("id_empresa")
+  numero                   Int               @map("numero")
+  situacao                 SituacaoOrcamento @default(RASCUNHO) @map("situacao")
+  clienteNome              String            @map("cliente_nome")
+  clienteTelefone          String?           @map("cliente_telefone")
+  clienteEndereco          String?           @map("cliente_endereco")
+  clienteCidade            String?           @map("cliente_cidade")
+  clienteDocumento         String?           @map("cliente_documento")
+  clienteNumeroEndereco    String?           @map("cliente_numero_endereco")
+  clienteInscricaoEstadual String?           @map("cliente_inscricao_estadual")
+  tipoDocumento            TipoDocumento     @default(ORCAMENTO) @map("tipo_documento")
+  dataEmissao              DateTime?         @map("data_emissao") @db.Date
+  observacoes              String?           @map("observacoes")
+  validadeDias             Int?              @map("validade_dias")
+  descontoTipo             TipoDesconto      @default(FIXO) @map("desconto_tipo")
   // FIXO: centavos; PERCENTUAL: pontos base (10000 representa 100%).
-  descontoValor    Int               @default(0) @map("desconto_valor")
-  subtotalCentavos Int               @default(0) @map("subtotal_centavos")
-  totalCentavos    Int               @default(0) @map("total_centavos")
-  dataCriacao      DateTime          @default(now()) @map("data_criacao")
-  dataAtualizacao  DateTime          @updatedAt @map("data_atualizacao")
-  empresa          Empresa           @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
-  itens            OrcamentoItem[]
+  descontoValor            Int               @default(0) @map("desconto_valor")
+  subtotalCentavos         Int               @default(0) @map("subtotal_centavos")
+  totalCentavos            Int               @default(0) @map("total_centavos")
+  dataCriacao              DateTime          @default(now()) @map("data_criacao")
+  dataAtualizacao          DateTime          @updatedAt @map("data_atualizacao")
+  empresa                  Empresa           @relation(fields: [idEmpresa], references: [idEmpresa], onDelete: Restrict)
+  itens                    OrcamentoItem[]
 
   @@unique([idEmpresa, numero])
   @@unique([idEmpresa, idOrcamento])
