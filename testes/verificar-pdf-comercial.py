@@ -27,11 +27,15 @@ for arquivo in arquivos:
         assert len(leitor.pages) == 1, "Documento simples não deve criar página adicional"
     if "pedido" in arquivo.name:
         assert "PEDIDO" in textos[0], "Tipo ausente"
+        completo = " ".join((leitor.pages[0].extract_text() or "").split())
+        for valor in ["Empresa Fictícia Demonstração", "Instalação e acabamento de pisos", "Responsável fictício", "Cidade Exemplo - RS", "@empresa.ficticia", "Qualidade em cada acabamento."]:
+            assert valor in completo, f"Campo comercial ausente no documento: {valor}"
+        assert "\ufffd" not in completo, "Texto com caractere de substituição"
     if "sem-logo" in arquivo.name:
         assert not any(p.images for p in leitor.pages), "Amostra sem logo contém imagens"
     if "quebras-extremas" in arquivo.name:
         texto = "\n".join(p.extract_text() for p in leitor.pages)
-        linhas = texto.splitlines()
+        linhas = [linha.strip() for linha in texto.splitlines()]
         assert texto.count("W") == 500, "Descrição sem espaços perdeu caracteres"
         assert texto.count("X") - len(leitor.pages) == 250, "Descrição multilinha perdeu caracteres"
         assert linhas.count("A") + linhas.count("Obs.: A") == 1999 and linhas.count("AB") == 1, "Observações perderam linhas"

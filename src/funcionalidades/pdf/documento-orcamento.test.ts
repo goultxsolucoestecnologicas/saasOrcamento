@@ -124,7 +124,9 @@ describe("paginação do formulário comercial", () => {
       { nome: "Empresa fictícia" },
     );
     const linha = p.paginas[0].itens[0];
-    expect(linha.quantidade.join("")).toBe("100.000" + "W".repeat(20));
+    expect(linha.quantidade.join("").replaceAll(" ", "")).toBe(
+      "100.000" + "W".repeat(20),
+    );
     expect(linha.altura).toBeGreaterThanOrEqual(
       Math.max(
         linha.quantidade.length,
@@ -134,6 +136,40 @@ describe("paginação do formulário comercial", () => {
         11 +
         8,
     );
+  });
+  it("reserva cliente e identidade máximos sem avançar sobre o total", () => {
+    const p = planejarDocumentoPdf(
+      {
+        ...base,
+        clienteNome: "W".repeat(150),
+        clienteEndereco: "W".repeat(300),
+        clienteNumeroEndereco: "W".repeat(20),
+        clienteCidade: "W".repeat(120),
+        clienteDocumento: "W".repeat(30),
+        clienteInscricaoEstadual: "W".repeat(30),
+      },
+      {
+        nome: "W".repeat(150),
+        descricaoAtividade: "W".repeat(300),
+        telefone: "W".repeat(30),
+        nomeResponsavel: "W".repeat(150),
+        cidade: "W".repeat(120),
+        estado: "RS",
+        instagram: "W".repeat(150),
+        facebook: "W".repeat(150),
+        slogan: "W".repeat(200),
+      },
+    );
+    expect(p.paginas).toHaveLength(1);
+    expect(
+      p.paginas[0].yTabela + 23 + p.paginas[0].itens[0].altura,
+    ).toBeLessThanOrEqual(720);
+    expect(
+      p.clientes
+        .flat()
+        .map((c) => c.linhas.join(""))
+        .join(""),
+    ).toBe("W".repeat(650));
   });
   it("mantém a grade e linhas vazias dentro do limite nas alturas limítrofes", () => {
     for (let n = 0; n < 60; n++) {

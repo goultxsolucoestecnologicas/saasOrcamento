@@ -49,3 +49,29 @@ Inspecionadas as renderizações finais do orçamento extenso (página 10 e últ
 A recaptura somente por leitura (`--capturas`) concluiu com código 0, sem salvar documentos/empresa; confirmou endpoint PDF 200, MIME `application/pdf` e assinatura `%PDF`, salvando a resposta privada em `.tmp/pedido-comercial-real.pdf`. As capturas aguardam marca carregada, imagens, fim de animações finitas, retiram o foco do campo e voltam ao início da página: sidebar alinhada ao topo e link de pular conteúdo não exposto por foco residual.
 
 Review final do cabeçalho sem logo: mínimo reduzido de 98 para 52 pontos, nome destacado sem espaço desnecessário; simples-sem-logo permanece uma página com tabela ampla. O caso extremo final tem 47 páginas, conserva a marca de continuação e total/assinatura na última, sem colisão. Refinamento aprovado na inspeção visual. Após a build final, `--capturas` foi executado novamente somente por leitura: seis capturas e GET do pedido real passaram com código 0. Nenhum defeito crítico permanece nas amostras revisadas.
+
+## Reabertura de fidelidade visual — referência frontal
+
+O usuário rejeitou a proximidade do resultado anterior e forneceu uma referência frontal mais nítida. A comparação independente confirmou diferenças de composição que a revisão anterior não havia tratado como impeditivas: cabeçalho central e empilhado, campos com divisórias abaixo de toda a linha, seleção em faixa separada, tabela retangular de traço leve e total pequeno sem preenchimento. O aceite editorial anterior não equivale a fidelidade suficiente ao modelo agora exigido.
+
+Critérios da correção: cabeçalho horizontal com logo à esquerda e contatos/responsável à direita; redes sociais na mesma linha e slogan serifado; seleção ao lado da data; rótulos destacados seguidos de linhas de preenchimento; contorno preto arredondado único envolvendo cliente e tabela; grade preta com descrição dominante e quantidade estreita; marca d’água ampla e discreta; assinatura à esquerda e caixa cinza de total maior à direita. A identidade e os contatos permanecem dados da empresa, sem copiar os dados pessoais da referência para as amostras.
+
+A nova inspeção aguarda as renderizações corrigidas. Não há aprovação antecipada nem agente Designer dedicado; a verificação combina revisão editorial do principal e QA independente.
+
+### Review1 da correção de composição
+
+A primeira renderização corrigida aproximou a composição do modelo frontal, mas foi devolvida: os rótulos Nome/CNPJ deixavam os dois-pontos numa linha isolada e os glifos de ORÇAMENTO/Nº estavam incorretos. A atividade da empresa também havia desaparecido por altura de linha herdada. O principal ainda detectou perda de observações no PDF real do caso extremo; o aceite permaneceu pendente, apesar da primeira página simples estar visualmente próxima.
+
+### Review2 das renderizações corrigidas
+
+Inspeção independente dos 13 PNGs finais: primeiras páginas das sete amostras e páginas intermediárias/últimas dos três documentos paginados. O pedido completo agora mostra logo à esquerda, telefone e responsável/cidade na linha superior direita, redes sociais em paralelo, slogan serifado e atividade legível. Data e seleção dividem a mesma faixa; rótulos e linhas de preenchimento, moldura arredondada única de cliente/tabela, grade preta, marca d’água ampla, assinatura e total cinza recompõem o estilo da referência frontal. Nome, CNPJ/CPF, Nº e ORÇAMENTO permanecem legíveis, sem quebra de pontuação.
+
+Nas páginas amostradas, não há colisão entre texto, grade, total e assinatura. Os serviços extensos que cabem numa página permanecem inteiros; o serviço maior que uma página apresenta continuação e não repete valores. Quantidades fracionárias com unidade podem ocupar duas linhas na coluna estreita, mantendo leitura e divisórias. O caso com 1.999 linhas de observação continua por páginas próprias, em vez de ser truncado para caber numa página.
+
+A inspeção visual é por amostragem e não constitui leitura humana das 76 páginas. A preservação integral dos textos e os limites geométricos são verificados separadamente pelo principal. A checagem do endpoint real após a build ainda está pendente nesta etapa; a impressão física permanece pendente. Não houve migração, alteração funcional ou cópia dos contatos reais da referência nas amostras.
+
+### Endpoint real após a build final
+
+`node testes/pdf-comercial-ui.mjs --capturas` terminou com código 0 na build corrigida: seis capturas foram atualizadas sem persistência, usando o mesmo pedido e a mesma conta fictícia. O GET autenticado validou HTTP 200, `application/pdf` e assinatura `%PDF`; a resposta fica no arquivo privado `.tmp/pedido-comercial-real.pdf`.
+
+O principal confirmou na extração do PDF real a preservação das 1.999 linhas A e do marcador AB, além dos blocos de 500 W e 250 X. Isso cobre o defeito de observação cortada que a imagem da primeira página, isoladamente, não demonstrava. Com atividade do cabeçalho restaurada, rótulos/glifos corrigidos, composição inspecionada e endpoint validado, não há bloqueio crítico nas amostras revistas. A impressão física continua pendente.

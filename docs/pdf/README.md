@@ -6,14 +6,16 @@ O modelo físico fornecido na conversa foi transformado em um formulário A4 fun
 
 A [análise anterior à implementação](ANALISE.md) registra as diferenças. A fotografia original foi inspecionada e preservada somente no workspace em `docs/referencias/formulario-fisico.png`: contém contatos reais e está ignorada pelo Git. Nenhum nome, telefone, perfil ou logo da fotografia foi fixado no produto ou nas amostras publicadas. A identificação da gráfica foi omitida por não ser informação da empresa emitente.
 
-| Fotografia                                          | Implementação digital                                                   |
-| --------------------------------------------------- | ----------------------------------------------------------------------- |
-| Logo à esquerda e identidade concentrada no topo    | Cabeçalho delimitado; campos opcionais omitidos e altura ajustada       |
-| Caixas Pedido/Orçamento                             | Tipo persistido, caixa correspondente marcada; independente da situação |
-| Data e campos em linhas compactas                   | Data brasileira e linhas com número, telefone, CPF/CNPJ e IE            |
-| Quantidade estreita, descrição ampla, preço e total | Quatro colunas 12/54/17/17%, valores à direita e unidades preservadas   |
-| Logo clara no centro da grade                       | Imagem proporcional com opacidade 0,09, somente quando há logo          |
-| Assinatura à esquerda e total em caixa à direita    | Rodapé final separado; subtotal/desconto quando aplicáveis              |
+| Fotografia                                          | Implementação digital                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------ |
+| Logo à esquerda e identidade concentrada no topo    | Cabeçalho delimitado; campos opcionais omitidos e altura ajustada        |
+| Caixas Pedido/Orçamento                             | Tipo persistido, caixa correspondente marcada; independente da situação  |
+| Data e campos em linhas compactas                   | Data brasileira e linhas com número, telefone, CPF/CNPJ e IE             |
+| Quantidade estreita, descrição ampla, preço e total | Quatro colunas 8/59/14,5/18,5%, valores à direita e unidades preservadas |
+| Logo clara no centro da grade                       | Imagem proporcional com opacidade 0,14, somente quando há logo           |
+| Assinatura à esquerda e total em caixa à direita    | Rodapé final separado; subtotal/desconto quando aplicáveis               |
+
+A composição foi ajustada à referência frontal: cabeçalho horizontal com contatos/redes em blocos, slogan serifado, data junto à seleção, rótulos seguidos de sublinhados, moldura preta única do cliente à grade, watermark maior e caixa cinza do total. A logo e os dados continuam dinâmicos. A revisão final também validou a impressão da atividade e de todas as linhas de observações extensas.
 
 ![Pedido completo com marca d'água](imagens/pedido-completo-logo.png)
 
@@ -37,13 +39,13 @@ Observações antecedem a tabela e podem ocupar páginas de continuação quando
 
 ## Testes e revisão
 
-192 testes unitários e 13 administrativos aprovados; lint, typecheck, formato e build de produção aprovados. Integração HTTP real verificou login, tenant/CSRF, cálculos, CRUD, sequência concorrente, paginação 201, logo privada, PDF e suspensão. Teste PostgreSQL confirmou os novos campos, DATE e RLS em transação revertida.
+193 testes unitários e 13 administrativos aprovados; lint, typecheck, formato e build de produção aprovados. Integração HTTP real verificou login, tenant/CSRF, cálculos, CRUD, sequência concorrente, paginação 201, logo privada, PDF e suspensão. Teste PostgreSQL confirmou os novos campos, DATE e RLS em transação revertida.
 
 QA independente: sete grupos E2E aprovados, incluindo pedido com emissão 29/02/2024, número/IE, edição histórica, download com um GET no duplo clique, falha de PDF com AlertDialog, tenant 404, CSRF 403 e UF inválida sem PUT. Cinco larguras 360/390/768/1024/1440 sem overflow ou violações axe nas regras selecionadas; zero erros de página. A configuração foi preenchida somente no navegador para capturas, sem alterar a empresa. A revisão final reutilizou o mesmo documento fictício.
 
 Não existe Designer configurado. O responsável realizou revisão editorial estruturada diretamente contra a fotografia; QA revisou amostras independentemente, sem se apresentar como Designer. Corrigidos: dimensão A4, reservas de linha, unidades longas, fragmentação desnecessária de serviços e cabeçalho vazio excessivo. Suspeitas de contraste durante fade e de divisória numa renderização intermediária foram verificadas no estado final, sem excluir regras. [Parecer QA](QA.md).
 
-Todas as77 páginas das sete amostras passaram na inspeção estrutural: A4, texto dentro da folha, nenhuma folha vazia e rodapé final exclusivo. O caso adversarial confirmou500 caracteres sem espaços,250 linhas de descrição e4000 caracteres de observações preservados. Inspeção visual humana por amostragem de primeiras/intermediárias/últimas páginas confirmou bordas, tipografia, alinhamento, logo, watermark e rodapé; não equivale a examinar visualmente cada folha.
+Todas as76 páginas das sete amostras passaram na inspeção estrutural: A4, texto dentro da folha, nenhuma folha vazia e rodapé final exclusivo. O caso adversarial confirmou500 caracteres sem espaços,250 linhas de descrição e4000 caracteres de observações preservados. Inspeção visual humana por amostragem de primeiras/intermediárias/últimas páginas confirmou bordas, tipografia, alinhamento, logo, watermark e rodapé; não equivale a examinar visualmente cada folha.
 
 ```powershell
 npm run lint
@@ -72,9 +74,9 @@ E2E requer o servidor de fixtures autorizado na porta3001; preparação não é 
 | [Simples sem logo](exemplos/orcamento-simples-sem-logo.pdf)       | 1       | Um item, opcionais ausentes e sem watermark                   |
 | [Vários itens com logo](exemplos/orcamento-varios-itens-logo.pdf) | 1       | 12itens e quantidades decimais                                |
 | [Registro antigo](exemplos/orcamento-teste.pdf)                   | 1       | Fallback de tipo/data e desconto fixo                         |
-| [Cem itens curtos](exemplos/orcamento-cem-itens-curtos.pdf)       | 5       | Cabeçalhos repetidos e total final                            |
-| [Cem descrições extensas](exemplos/orcamento-extenso.pdf)         | 21      | 500 caracteres/item e desconto percentual                     |
-| [Quebras extremas](exemplos/orcamento-quebras-extremas.pdf)       | 47      | Observações 4000, palavras sem espaços e item maior que folha |
+| [Cem itens curtos](exemplos/orcamento-cem-itens-curtos.pdf)       | 6       | Cabeçalhos repetidos e total final                            |
+| [Cem descrições extensas](exemplos/orcamento-extenso.pdf)         | 18      | 500 caracteres/item e desconto percentual                     |
+| [Quebras extremas](exemplos/orcamento-quebras-extremas.pdf)       | 48      | Observações 4000, palavras sem espaços e item maior que folha |
 
 ![Orçamento simples sem logo](imagens/orcamento-simples-sem-logo.png)
 ![Vários itens e marca d'água](imagens/orcamento-varios-itens-logo.png)

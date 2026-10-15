@@ -6,6 +6,10 @@ import {
   Text,
   Image,
   StyleSheet,
+  Svg,
+  Path,
+  Rect,
+  Circle,
 } from "@react-pdf/renderer";
 
 import { metricasHelvetica } from "./metricas-helvetica";
@@ -104,103 +108,86 @@ export function quebrarLinhasPdf(
 const LARGURA = 523.28;
 const ALTURA_LINHA = 11;
 const COLUNAS = [
-  LARGURA * 0.12,
-  LARGURA * 0.54,
-  LARGURA * 0.17,
-  LARGURA * 0.17,
+  LARGURA * 0.08,
+  LARGURA * 0.59,
+  LARGURA * 0.145,
+  LARGURA * 0.185,
 ];
+const LARGURA_CLIENTE = LARGURA - 22;
 const estilos = StyleSheet.create({
   pagina: {
     height: 841.89,
     padding: 36,
     fontFamily: "Helvetica",
     fontSize: 8,
-    color: "#171717",
+    color: "#111111",
     lineHeight: 1.2,
   },
   cabecalho: {
-    borderWidth: 0.8,
-    borderColor: "#333333",
-    borderRadius: 4,
-    padding: 9,
+    borderWidth: 1.2,
+    borderColor: "#111111",
+    borderRadius: 8,
+    padding: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 10,
   },
-  logo: { width: 108, height: 80, objectFit: "contain" },
-  linhaCliente: {
-    flexDirection: "row",
-    borderBottomWidth: 0.45,
-    borderColor: "#777777",
-    paddingTop: 3,
-    paddingBottom: 3,
-  },
+  logo: { width: 145, height: 56, objectFit: "contain" },
+  linhaCliente: { flexDirection: "row", alignItems: "flex-start", gap: 5 },
   selecao: {
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
-    gap: 7,
-    marginTop: 6,
-    marginBottom: 7,
-    fontSize: 10,
-  },
-  caixa: {
-    width: 11,
-    height: 11,
-    borderWidth: 0.7,
-    borderColor: "#333333",
-    textAlign: "center",
-    fontSize: 8,
+    gap: 6,
+    fontSize: 14,
     fontFamily: "Helvetica-Bold",
   },
-  tabela: {
-    borderTopWidth: 0.65,
-    borderLeftWidth: 0.65,
-    borderColor: "#555555",
-    position: "relative",
+  caixa: {
+    width: 17,
+    height: 17,
+    borderWidth: 1,
+    borderColor: "#111111",
+    textAlign: "center",
+    fontSize: 12,
+    fontFamily: "Helvetica-Bold",
   },
-  linha: {
-    flexDirection: "row",
-    borderBottomWidth: 0.65,
-    borderColor: "#555555",
-  },
+  tabela: { borderTopWidth: 1, borderColor: "#111111", position: "relative" },
+  linha: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#111111" },
   celula: {
-    borderRightWidth: 0.65,
-    borderColor: "#555555",
-    paddingHorizontal: 5,
+    borderRightWidth: 1,
+    borderColor: "#111111",
+    paddingHorizontal: 4,
     paddingVertical: 4,
   },
   marca: {
     position: "absolute",
-    width: 275,
-    height: 200,
-    left: (LARGURA - 275) / 2,
-    opacity: 0.09,
+    width: 310,
+    height: 240,
+    left: (LARGURA - 310) / 2,
+    opacity: 0.14,
     objectFit: "contain",
   },
-  rodape: {
-    position: "absolute",
-    left: 36,
-    right: 36,
-    top: 741,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-  },
   assinatura: {
-    width: 265,
-    borderTopWidth: 0.65,
-    borderColor: "#555555",
+    position: "absolute",
+    top: 765,
+    left: 40,
+    width: 310,
+    borderTopWidth: 1,
+    borderColor: "#111111",
     textAlign: "center",
-    paddingTop: 5,
-    fontSize: 8,
+    paddingTop: 4,
+    fontSize: 9,
   },
   total: {
-    borderWidth: 0.8,
-    borderColor: "#333333",
-    borderRadius: 3,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    width: 120,
+    height: 31,
+    borderWidth: 1.2,
+    borderColor: "#111111",
+    borderRadius: 7,
+    backgroundColor: "#e4e4e4",
+    paddingVertical: 7,
+    paddingHorizontal: 6,
+    textAlign: "right",
     fontSize: 12,
     fontFamily: "Helvetica-Bold",
   },
@@ -222,66 +209,104 @@ type PaginaPlanejada = {
   alturaTabela: number;
 };
 function linhasEmpresa(empresa: EmpresaDocumento) {
-  return [
-    empresa.nome,
-    empresa.descricaoAtividade,
-    [empresa.telefone, empresa.nomeResponsavel].filter(Boolean).join("  |  "),
-    [empresa.cidade, empresa.estado].filter(Boolean).join(" - "),
-    empresa.instagram && `Instagram: ${empresa.instagram}`,
-    empresa.facebook && `Facebook: ${empresa.facebook}`,
-    empresa.slogan,
-  ]
-    .filter((v): v is string => !!v)
-    .flatMap((v, indice) =>
-      quebrarLinhasPdf(
-        v,
-        empresa.logo ? 375 : 501,
-        indice === 0 ? 14 : 8.5,
-        indice === 0,
-      ).map((texto) => ({ texto, principal: indice === 0 })),
-    );
+  const escala = Object.values(empresa).some(
+    (v) => typeof v === "string" && !v.startsWith("data:") && v.length > 100,
+  )
+    ? 0.75
+    : 1;
+  const grupo = (
+    valor: string | null | undefined,
+    largura: number,
+    tamanho: number,
+    principal = false,
+  ) =>
+    valor
+      ? quebrarLinhasPdf(valor, largura, tamanho * escala, principal).map(
+          (texto) => ({
+            escala,
+            texto,
+            principal,
+          }),
+        )
+      : [];
+  return {
+    nome: grupo(empresa.nome, 145, 10, true),
+    atividade: grupo(empresa.descricaoAtividade, 145, 7),
+    telefone: grupo(empresa.telefone, 133, 12, true),
+    responsavel: grupo(empresa.nomeResponsavel, 168, 12, true),
+    local: grupo(
+      [empresa.cidade, empresa.estado].filter(Boolean).join(" - "),
+      168,
+      8,
+      true,
+    ),
+    facebook: grupo(empresa.facebook, 137, 9, true),
+    instagram: grupo(empresa.instagram, 151, 9, true),
+    slogan: grupo(empresa.slogan, 338, 14),
+  };
 }
 function linhasCliente(orcamento: DadosDocumentoOrcamento) {
   return [
+    [{ rotulo: "Nome", valor: orcamento.clienteNome, proporcao: 1 }],
     [
-      { rotulo: "Data", valor: formatarDataPdf(orcamento) },
-      { rotulo: "Nº", valor: String(orcamento.numero).padStart(5, "0") },
+      {
+        rotulo: "End.",
+        valor: orcamento.clienteEndereco ?? "",
+        proporcao: 0.87,
+      },
+      {
+        rotulo: "Nº",
+        valor: orcamento.clienteNumeroEndereco ?? "",
+        proporcao: 0.13,
+      },
     ],
-    [{ rotulo: "Nome", valor: orcamento.clienteNome }],
     [
-      { rotulo: "End.", valor: orcamento.clienteEndereco ?? "" },
-      { rotulo: "Nº", valor: orcamento.clienteNumeroEndereco ?? "" },
+      {
+        rotulo: "Cidade",
+        valor: orcamento.clienteCidade ?? "",
+        proporcao: 0.56,
+      },
+      {
+        rotulo: "Fone",
+        valor: orcamento.clienteTelefone ?? "",
+        proporcao: 0.44,
+      },
     ],
     [
-      { rotulo: "Cidade", valor: orcamento.clienteCidade ?? "" },
-      { rotulo: "Fone", valor: orcamento.clienteTelefone ?? "" },
+      {
+        rotulo: "CNPJ/CPF",
+        valor: orcamento.clienteDocumento ?? "",
+        proporcao: 0.61,
+      },
+      {
+        rotulo: "Insc. Est.",
+        valor: orcamento.clienteInscricaoEstadual ?? "",
+        proporcao: 0.39,
+      },
     ],
-    [
-      { rotulo: "CPF/CNPJ", valor: orcamento.clienteDocumento ?? "" },
-      { rotulo: "Insc. Est.", valor: orcamento.clienteInscricaoEstadual ?? "" },
-    ],
-  ].map((campos, indice) =>
-    campos.map((campo, i) => ({
-      ...campo,
-      largura:
-        campos.length === 1
-          ? LARGURA
-          : indice === 2
-            ? i === 0
-              ? LARGURA * 0.8
-              : LARGURA * 0.2
-            : LARGURA / 2,
-      linhas: quebrarLinhasPdf(
-        `${campo.rotulo}: ${campo.valor}`,
-        campos.length === 1
-          ? LARGURA - 8
-          : indice === 2
-            ? i === 0
-              ? LARGURA * 0.8 - 8
-              : LARGURA * 0.2 - 8
-            : LARGURA / 2 - 8,
-      ),
-    })),
+  ].map((campos) =>
+    campos.map((campo) => {
+      const largura =
+        (LARGURA_CLIENTE - (campos.length - 1) * 5) * campo.proporcao;
+      const larguraRotulo =
+        (Array.from(`${campo.rotulo}:`).reduce(
+          (soma, caractere) =>
+            soma +
+            ((metricasHelvetica["Helvetica-Bold"] as Record<string, number>)[
+              caractere
+            ] ?? 1000),
+          0,
+        ) *
+          10) /
+          1000 +
+        4;
+      return {
+        ...campo,
+        largura,
+        larguraRotulo,
+        linhas: quebrarLinhasPdf(campo.valor, largura - larguraRotulo - 2, 9),
+      };
+    }),
   );
 }
 export function planejarDocumentoPdf(
@@ -289,17 +314,38 @@ export function planejarDocumentoPdf(
   empresa: EmpresaDocumento,
 ) {
   const identidade = linhasEmpresa(empresa);
+  const escala = identidade.nome[0]?.escala ?? 1;
+  const alturaEsquerda =
+    (empresa.logo ? 56 : 0) +
+    identidade.nome.length * 12 * escala +
+    identidade.atividade.length * 9 * escala;
+  const alturaDireita =
+    Math.max(
+      identidade.telefone.length * 14 * escala,
+      (identidade.responsavel.length * 14 + identidade.local.length * 10) *
+        escala,
+    ) +
+    Math.max(identidade.facebook.length, identidade.instagram.length) *
+      11 *
+      escala +
+    identidade.slogan.length * 17 * escala +
+    14;
   const alturaCabecalho = Math.max(
     empresa.logo ? 98 : 52,
-    identidade.reduce((s, l) => s + (l.principal ? 18 : 12), 0) + 18,
+    alturaEsquerda + 16,
+    alturaDireita + 16,
   );
   const clientes = linhasCliente(orcamento);
   const alturaCliente = clientes.reduce(
     (s, campos) =>
-      s + Math.max(...campos.map((c) => c.linhas.length)) * ALTURA_LINHA + 6,
+      s +
+      Math.max(
+        22,
+        Math.max(...campos.map((c) => c.linhas.length)) * ALTURA_LINHA + 7,
+      ),
     0,
   );
-  const base = 36 + alturaCabecalho + 31;
+  const base = 36 + alturaCabecalho + 32;
   const paginas: PaginaPlanejada[] = [];
   const nova = (): PaginaPlanejada => ({
     observacoes: [],
@@ -310,10 +356,11 @@ export function planejarDocumentoPdf(
   });
   let pagina = nova();
   paginas.push(pagina);
-  if (orcamento.observacoes) {
+  {
     const linhas = quebrarLinhasPdf(
-      `Obs.: ${orcamento.observacoes}`,
-      LARGURA - 10,
+      `Obs.: ${orcamento.observacoes ?? ""}`,
+      LARGURA_CLIENTE - 2,
+      9,
     );
     while (linhas.length) {
       const capacidade = Math.max(
@@ -321,7 +368,10 @@ export function planejarDocumentoPdf(
         Math.floor((710 - pagina.yTabela - 34) / ALTURA_LINHA),
       );
       pagina.observacoes = linhas.splice(0, capacidade);
-      pagina.yTabela += pagina.observacoes.length * ALTURA_LINHA + 7;
+      pagina.yTabela += Math.max(
+        22,
+        pagina.observacoes.length * ALTURA_LINHA + 7,
+      );
       if (linhas.length) {
         pagina = nova();
         paginas.push(pagina);
@@ -405,7 +455,13 @@ export function planejarDocumentoPdf(
   }
   for (const p of paginas)
     p.alturaTabela = p.itens.length ? 720 - p.yTabela : 0;
-  return { paginas, identidade, alturaCabecalho, clientes };
+  return {
+    paginas,
+    identidade: Object.values(identidade).flat(),
+    gruposIdentidade: identidade,
+    alturaCabecalho,
+    clientes,
+  };
 }
 /** Compatibility helper groups whole items; the document planner also supports oversized row continuations. */
 export function paginarItensPdf(itens: DadosDocumentoOrcamento["itens"]) {
@@ -449,6 +505,95 @@ function LinhasTexto({
     </View>
   );
 }
+function BlocoIdentidade({
+  linhas,
+  tamanho,
+  altura,
+  italico = false,
+  serifado = false,
+}: {
+  linhas: Array<{ texto: string; principal: boolean; escala?: number }>;
+  tamanho: number;
+  altura: number;
+  italico?: boolean;
+  serifado?: boolean;
+}) {
+  return (
+    <View style={{ flexShrink: 1 }}>
+      {linhas.map((linha, i) => (
+        <Text
+          key={i}
+          style={{
+            height: altura * (linha.escala ?? 1),
+            fontSize: tamanho * (linha.escala ?? 1),
+            lineHeight: 1,
+            textAlign: "center",
+            fontFamily: serifado
+              ? "Times-Italic"
+              : linha.principal
+                ? italico
+                  ? "Helvetica-BoldOblique"
+                  : "Helvetica-Bold"
+                : "Helvetica",
+          }}
+        >
+          {linha.texto}
+        </Text>
+      ))}
+    </View>
+  );
+}
+function IconeContato({
+  tipo,
+}: {
+  tipo: "facebook" | "instagram" | "whatsapp";
+}) {
+  return (
+    <Svg width={11} height={11} viewBox="0 0 24 24">
+      {tipo === "facebook" ? (
+        <>
+          <Rect x="1" y="1" width="22" height="22" rx="2" fill="#111111" />
+          <Path
+            d="M14 23V14h3l.5-4H14V8c0-1 .5-1.5 1.6-1.5H18V3h-3c-3.2 0-5 1.7-5 5v2H7v4h3v9"
+            fill="white"
+          />
+        </>
+      ) : tipo === "instagram" ? (
+        <>
+          <Rect
+            x="2"
+            y="2"
+            width="20"
+            height="20"
+            rx="5"
+            fill="none"
+            stroke="#111111"
+            strokeWidth="2"
+          />
+          <Circle
+            cx="12"
+            cy="12"
+            r="5"
+            fill="none"
+            stroke="#111111"
+            strokeWidth="2"
+          />
+          <Circle cx="18" cy="6" r="1.5" fill="#111111" />
+        </>
+      ) : (
+        <>
+          <Path
+            d="M4 20l1-4a9 9 0 1 1 4 4z"
+            fill="none"
+            stroke="#111111"
+            strokeWidth="1.7"
+          />
+          <Path d="M8 7c-2 3 3 8 6 9l2-2-3-2-1 1-3-3 1-1-2-2z" fill="#111111" />
+        </>
+      )}
+    </Svg>
+  );
+}
 // Monetary figures below are formatted only from authoritative persisted values.
 export function DocumentoOrcamento({
   orcamento,
@@ -457,7 +602,7 @@ export function DocumentoOrcamento({
   orcamento: DadosDocumentoOrcamento;
   empresa: EmpresaDocumento;
 }) {
-  const { paginas, identidade, alturaCabecalho, clientes } =
+  const { paginas, gruposIdentidade, alturaCabecalho, clientes } =
     planejarDocumentoPdf(orcamento, empresa);
   const titulo = orcamento.tipoDocumento === "PEDIDO" ? "Pedido" : "Orçamento";
   const numero = String(orcamento.numero).padStart(5, "0");
@@ -470,58 +615,238 @@ export function DocumentoOrcamento({
       {paginas.map((pagina, indice) => (
         <Page key={indice} size="A4" style={estilos.pagina}>
           <View style={[estilos.cabecalho, { height: alturaCabecalho }]}>
-            {empresa.logo && <Image src={empresa.logo} style={estilos.logo} />}
-            <View style={{ flex: 1 }}>
-              {identidade.map((linha, i) => (
-                <Text
-                  key={i}
-                  style={{
-                    height: linha.principal ? 18 : 12,
-                    fontSize: linha.principal ? 14 : 8.5,
-                    fontFamily: linha.principal
-                      ? "Helvetica-Bold"
-                      : "Helvetica",
-                    textAlign: empresa.logo ? "center" : "left",
-                  }}
+            <View style={{ width: 145, alignItems: "center" }}>
+              {empresa.logo && (
+                <Image src={empresa.logo} style={estilos.logo} />
+              )}
+              <BlocoIdentidade
+                linhas={gruposIdentidade.nome}
+                tamanho={10}
+                altura={12}
+              />
+              <BlocoIdentidade
+                linhas={gruposIdentidade.atividade}
+                tamanho={7}
+                altura={9}
+              />
+            </View>
+            <View style={{ flex: 1, gap: 7 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  gap: 6,
+                }}
+              >
+                {gruposIdentidade.telefone.length > 0 && (
+                  <View style={{ width: 147, flexDirection: "row", gap: 4 }}>
+                    <IconeContato tipo="whatsapp" />
+                    <BlocoIdentidade
+                      linhas={gruposIdentidade.telefone}
+                      tamanho={12}
+                      altura={14}
+                    />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <BlocoIdentidade
+                    linhas={gruposIdentidade.responsavel}
+                    tamanho={12}
+                    altura={14}
+                    italico
+                  />
+                  <BlocoIdentidade
+                    linhas={gruposIdentidade.local}
+                    tamanho={8}
+                    altura={10}
+                    italico
+                  />
+                </View>
+              </View>
+              {(empresa.facebook || empresa.instagram) && (
+                <View
+                  style={{ flexDirection: "row", gap: 9, alignItems: "center" }}
                 >
-                  {linha.texto}
-                </Text>
-              ))}
+                  {empresa.facebook && (
+                    <View style={{ width: 151, flexDirection: "row", gap: 4 }}>
+                      <IconeContato tipo="facebook" />
+                      <BlocoIdentidade
+                        linhas={gruposIdentidade.facebook}
+                        tamanho={9}
+                        altura={11}
+                      />
+                    </View>
+                  )}
+                  {empresa.instagram && (
+                    <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
+                      <IconeContato tipo="instagram" />
+                      <BlocoIdentidade
+                        linhas={gruposIdentidade.instagram}
+                        tamanho={9}
+                        altura={11}
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
+              <BlocoIdentidade
+                linhas={gruposIdentidade.slogan}
+                tamanho={14}
+                altura={17}
+                serifado
+              />
             </View>
           </View>
-          <View style={estilos.selecao}>
-            <View style={estilos.caixa}>
-              <Text>{orcamento.tipoDocumento === "PEDIDO" ? "X" : " "}</Text>
+          <View
+            style={{
+              position: "absolute",
+              top: 36 + alturaCabecalho,
+              left: 36,
+              width: LARGURA,
+              height: 720 - 36 - alturaCabecalho,
+              borderWidth: 1.2,
+              borderColor: "#111111",
+              borderRadius: 8,
+            }}
+          />
+          <View
+            style={{
+              height: 32,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 10,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: 215,
+                gap: 4,
+              }}
+            >
+              <Text style={{ fontSize: 9 }}>Data:</Text>
+              <Text
+                style={{
+                  borderBottomWidth: 0.6,
+                  width: 175,
+                  paddingBottom: 2,
+                  fontSize: 9,
+                }}
+              >
+                {formatarDataPdf(orcamento)}
+              </Text>
             </View>
-            <Text>PEDIDO</Text>
-            <View style={estilos.caixa}>
-              <Text>{orcamento.tipoDocumento !== "PEDIDO" ? "X" : " "}</Text>
+            <View style={estilos.selecao}>
+              <View style={estilos.caixa}>
+                <Text>{orcamento.tipoDocumento === "PEDIDO" ? "X" : " "}</Text>
+              </View>
+              <Text>PEDIDO</Text>
+              <View style={estilos.caixa}>
+                <Text>{orcamento.tipoDocumento !== "PEDIDO" ? "X" : " "}</Text>
+              </View>
+              <Text>ORÇAMENTO</Text>
             </View>
-            <Text>ORÇAMENTO</Text>
           </View>
           {pagina.primeira ? (
             clientes.map((campos, i) => (
-              <View key={i} style={estilos.linhaCliente}>
+              <View
+                key={i}
+                style={[
+                  estilos.linhaCliente,
+                  {
+                    paddingHorizontal: 11,
+                    height: Math.max(
+                      22,
+                      Math.max(...campos.map((c) => c.linhas.length)) *
+                        ALTURA_LINHA +
+                        7,
+                    ),
+                  },
+                ]}
+              >
                 {campos.map((campo, j) => (
                   <View
                     key={j}
-                    style={{ width: campo.largura, paddingHorizontal: 4 }}
+                    style={{
+                      width: campo.largura,
+                      flexDirection: "row",
+                      gap: 2,
+                    }}
                   >
-                    <LinhasTexto linhas={campo.linhas} />
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontFamily: "Helvetica-Bold",
+                        width: campo.larguraRotulo,
+                      }}
+                    >
+                      {campo.rotulo}:
+                    </Text>
+                    <View
+                      style={{
+                        flex: 1,
+                        borderBottomWidth: 0.6,
+                        borderColor: "#111111",
+                        paddingBottom: 2,
+                        fontSize: 9,
+                      }}
+                    >
+                      <LinhasTexto linhas={campo.linhas} />
+                    </View>
                   </View>
                 ))}
               </View>
             ))
           ) : (
-            <Text style={{ height: 18 }}>
-              {titulo} Nº {numero} - {formatarDataPdf(orcamento)}
+            <Text style={{ height: 18, paddingHorizontal: 11 }}>
+              {titulo} Nº {numero} — continuação
             </Text>
           )}
           {pagina.observacoes.length > 0 && (
             <View
-              style={{ paddingHorizontal: 5, marginTop: 3, marginBottom: 4 }}
+              style={{
+                paddingHorizontal: 11,
+                height: Math.max(
+                  22,
+                  pagina.observacoes.length * ALTURA_LINHA + 7,
+                ),
+                fontSize: 9,
+              }}
             >
-              <LinhasTexto linhas={pagina.observacoes} />
+              {pagina.observacoes.map((linha, i) => (
+                <View
+                  key={i}
+                  style={{
+                    height:
+                      ALTURA_LINHA +
+                      (i === pagina.observacoes.length - 1 ? 2 : 0),
+                    flexDirection: "row",
+                  }}
+                >
+                  {i === 0 && (
+                    <Text style={{ width: 26, lineHeight: 1, fontSize: 9 }}>
+                      {linha.startsWith("Obs.:") ? "Obs.:" : " "}
+                    </Text>
+                  )}
+                  <Text
+                    style={{
+                      flex: 1,
+                      lineHeight: 1,
+                      fontSize: 9,
+                      borderBottomWidth:
+                        i === pagina.observacoes.length - 1 ? 0.6 : 0,
+                      borderColor: "#111111",
+                      paddingBottom: 0,
+                    }}
+                  >
+                    {i === 0 && linha.startsWith("Obs.:")
+                      ? linha.slice(5).trimStart()
+                      : linha || " "}
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
           {pagina.itens.length > 0 && (
@@ -544,7 +869,7 @@ export function DocumentoOrcamento({
                     estilos.marca,
                     {
                       height: Math.min(
-                        200,
+                        240,
                         Math.max(0, pagina.alturaTabela - 31),
                       ),
                       top:
@@ -552,7 +877,7 @@ export function DocumentoOrcamento({
                         (pagina.alturaTabela -
                           23 -
                           Math.min(
-                            200,
+                            240,
                             Math.max(0, pagina.alturaTabela - 31),
                           )) /
                           2,
@@ -563,7 +888,7 @@ export function DocumentoOrcamento({
               <View
                 style={[
                   estilos.linha,
-                  { height: 23, backgroundColor: "#e8e8e8" },
+                  { height: 23, backgroundColor: "#d8d8d8" },
                 ]}
               >
                 {["Quant.", "Descrição do Serviço", "P. Unit.", "TOTAL"].map(
@@ -575,7 +900,9 @@ export function DocumentoOrcamento({
                         {
                           width: COLUNAS[i],
                           fontFamily: "Helvetica-Bold",
-                          textAlign: i >= 2 ? "right" : "center",
+                          textAlign: "center",
+                          fontSize: i === 0 ? 8 : 10,
+                          borderRightWidth: i === 3 ? 0 : 1,
                         },
                       ]}
                     >
@@ -614,7 +941,11 @@ export function DocumentoOrcamento({
                   <View
                     style={[
                       estilos.celula,
-                      { width: COLUNAS[3], textAlign: "right" },
+                      {
+                        width: COLUNAS[3],
+                        textAlign: "right",
+                        borderRightWidth: 0,
+                      },
                     ]}
                   >
                     <LinhasTexto linhas={linha.total} />
@@ -626,7 +957,7 @@ export function DocumentoOrcamento({
                   pagina.alturaTabela -
                   23 -
                   pagina.itens.reduce((s, l) => s + l.altura, 0);
-                const n = Math.max(1, Math.floor(restante / 23));
+                const n = Math.max(0, Math.floor(restante / 23));
                 return Array.from({ length: n }, (_, i) => (
                   <View
                     key={`vazia-${i}`}
@@ -637,8 +968,8 @@ export function DocumentoOrcamento({
                         key={j}
                         style={{
                           width: largura,
-                          borderRightWidth: 0.65,
-                          borderColor: "#555555",
+                          borderRightWidth: j === 3 ? 0 : 1,
+                          borderColor: "#111111",
                         }}
                       />
                     ))}
@@ -648,22 +979,17 @@ export function DocumentoOrcamento({
             </View>
           )}
           {indice === paginas.length - 1 && (
-            <View style={estilos.rodape}>
-              <View>
-                <View style={estilos.assinatura}>
-                  <Text>ASSINATURA</Text>
-                </View>
-                {orcamento.validadeDias != null && (
-                  <Text style={{ marginTop: 7, fontSize: 7 }}>
-                    Validade: {orcamento.validadeDias} dias a partir da emissão.
-                  </Text>
-                )}
-              </View>
-              <View style={{ width: 210 }}>
+            <>
+              <View
+                style={{
+                  position: "absolute",
+                  top: 730,
+                  right: 36,
+                  alignItems: "flex-end",
+                }}
+              >
                 {orcamento.descontoValor > 0 && (
-                  <Text
-                    style={{ fontSize: 8, textAlign: "right", marginBottom: 5 }}
-                  >
+                  <Text style={{ fontSize: 7, marginBottom: 4 }}>
                     Subtotal: {formatarReaisPdf(orcamento.subtotalCentavos)} |
                     Desconto:{" "}
                     {orcamento.descontoTipo === "FIXO"
@@ -672,14 +998,9 @@ export function DocumentoOrcamento({
                   </Text>
                 )}
                 <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    gap: 8,
-                  }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 7 }}
                 >
-                  <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 10 }}>
+                  <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 13 }}>
                     TOTAL R$
                   </Text>
                   <Text style={estilos.total}>
@@ -690,7 +1011,22 @@ export function DocumentoOrcamento({
                   </Text>
                 </View>
               </View>
-            </View>
+              <View style={estilos.assinatura}>
+                <Text>ASSINATURA</Text>
+              </View>
+              {orcamento.validadeDias != null && (
+                <Text
+                  style={{
+                    position: "absolute",
+                    top: 790,
+                    left: 40,
+                    fontSize: 7,
+                  }}
+                >
+                  Validade: {orcamento.validadeDias} dias a partir da emissão.
+                </Text>
+              )}
+            </>
           )}
           <Text
             style={{

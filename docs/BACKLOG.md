@@ -27,7 +27,7 @@ EM_REVISAO: branch `feat/ui-ux-redesign-mobile-first`, baseada em `t12-validacao
 
 ## PDF comercial conforme modelo físico
 
-EM_REVISAO: branch `feat/pdf-orcamento-modelo-comercial`, baseada na reformulação UI (PR4). Identidade comercial opcional, número/IE, tipo e emissão histórica integrados. Migration somente aditiva aplicada no desenvolvimento confirmado; testes de persistência/RLS revertidos. 192 unitários, 13 administrativos, lint/TS/build e HTTP real aprovados. Sete grupos E2E e revisão editorial independente; sete PDFs reais (77 páginas verificadas), capturas e limitações em `docs/pdf/README.md`. Sem merge automático.
+EM_REVISAO: branch `feat/pdf-orcamento-modelo-comercial`, baseada na reformulação UI (PR4). Identidade comercial opcional, número/IE, tipo e emissão histórica integrados. Migration somente aditiva aplicada no desenvolvimento confirmado; testes de persistência/RLS revertidos. 193 unitários, 13 administrativos, lint/TS/build e HTTP real aprovados. Sete grupos E2E e revisão editorial independente; sete PDFs reais (76 páginas verificadas), capturas e limitações em `docs/pdf/README.md`. Sem merge automático.
 
 ## Fora do escopo
 

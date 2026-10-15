@@ -14,3 +14,9 @@ Referência principal: fotografia fornecida pelo usuário, preservada localmente
 Persistência atual: Prisma 7 e Supabase PostgreSQL, `empresa`, `orcamento`, `orcamento_item`; dinheiro em centavos, quantidades em milésimos e valores persistidos calculados no backend. Fluxos de criação/edição compartilham validação Zod e wizard; configurações atualizam empresa/logo. Campos adicionais opcionais serão aditivos; emissão de registros antigos será derivada da criação em São Paulo, sem mudar dados históricos. Não haverá alteração de cálculos, autorização ou cadastro.
 
 Revisão: não existe agente Designer configurado; revisão editorial estruturada pelo responsável e QA independente, comparando fotografia e PDFs renderizados. Evidências serão geradas com dados fictícios.
+
+## Correção solicitada após a primeira entrega
+
+O usuário informou que o estilo ainda estava diferente e forneceu uma referência frontal mais nítida. A primeira versão preservava as seções, mas alterava a composição: identidade empilhada no cabeçalho, seleção separada da data, sublinhados abaixo de rótulos, ausência da moldura única do corpo, coluna de quantidade larga e total com pouco destaque.
+
+A correção visual usa blocos no cabeçalho, contatos/redes em linhas, slogan com tipografia própria, data e seleção lado a lado, linhas iniciadas após os rótulos, moldura contínua arredondada unindo cliente e tabela, grade preta com proporções mais próximas da imagem e caixa cinza do total à direita. Mantém dados dinâmicos, data brasileira, paginação e todos os contratos existentes. Nenhum novo tipo de comprovante ou regra financeira será criado.
