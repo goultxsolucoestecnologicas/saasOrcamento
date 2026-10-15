@@ -514,12 +514,14 @@ function BlocoIdentidade({
   altura,
   italico = false,
   serifado = false,
+  alinhamento = "center",
 }: {
   linhas: Array<{ texto: string; principal: boolean; escala?: number }>;
   tamanho: number;
   altura: number;
   italico?: boolean;
   serifado?: boolean;
+  alinhamento?: "left" | "center";
 }) {
   return (
     <View style={{ flexShrink: 1 }}>
@@ -530,7 +532,7 @@ function BlocoIdentidade({
             height: altura * (linha.escala ?? 1),
             fontSize: tamanho * (linha.escala ?? 1),
             lineHeight: 1,
-            textAlign: "center",
+            textAlign: alinhamento,
             fontFamily: serifado
               ? "Times-Italic"
               : linha.principal
@@ -636,14 +638,30 @@ export function DocumentoOrcamento({
                 altura={9}
               />
             </View>
-            <View style={{ flex: 1, gap: 7 }}>
+            <View style={{ flex: 1, gap: 6 }}>
               <View
                 style={{
                   flexDirection: "row",
-                  justifyContent: "space-between",
-                  gap: 6,
+                  alignItems: "flex-start",
+                  gap: 12,
                 }}
               >
+                <View style={{ width: 168 }}>
+                  <BlocoIdentidade
+                    linhas={gruposIdentidade.responsavel}
+                    tamanho={12}
+                    altura={14}
+                    italico
+                    alinhamento="left"
+                  />
+                  <BlocoIdentidade
+                    linhas={gruposIdentidade.local}
+                    tamanho={8}
+                    altura={10}
+                    italico
+                    alinhamento="left"
+                  />
+                </View>
                 {gruposIdentidade.telefone.length > 0 && (
                   <View style={{ width: 147, flexDirection: "row", gap: 4 }}>
                     <IconeContato tipo="whatsapp" />
@@ -651,45 +669,38 @@ export function DocumentoOrcamento({
                       linhas={gruposIdentidade.telefone}
                       tamanho={12}
                       altura={14}
+                      alinhamento="left"
                     />
                   </View>
                 )}
-                <View style={{ flex: 1 }}>
-                  <BlocoIdentidade
-                    linhas={gruposIdentidade.responsavel}
-                    tamanho={12}
-                    altura={14}
-                    italico
-                  />
-                  <BlocoIdentidade
-                    linhas={gruposIdentidade.local}
-                    tamanho={8}
-                    altura={10}
-                    italico
-                  />
-                </View>
               </View>
               {(empresa.facebook || empresa.instagram) && (
                 <View
-                  style={{ flexDirection: "row", gap: 9, alignItems: "center" }}
+                  style={{
+                    flexDirection: "row",
+                    gap: 12,
+                    alignItems: "flex-start",
+                  }}
                 >
                   {empresa.facebook && (
-                    <View style={{ width: 151, flexDirection: "row", gap: 4 }}>
+                    <View style={{ width: 162, flexDirection: "row", gap: 4 }}>
                       <IconeContato tipo="facebook" />
                       <BlocoIdentidade
                         linhas={gruposIdentidade.facebook}
                         tamanho={9}
                         altura={11}
+                        alinhamento="left"
                       />
                     </View>
                   )}
                   {empresa.instagram && (
-                    <View style={{ flex: 1, flexDirection: "row", gap: 4 }}>
+                    <View style={{ width: 168, flexDirection: "row", gap: 4 }}>
                       <IconeContato tipo="instagram" />
                       <BlocoIdentidade
                         linhas={gruposIdentidade.instagram}
                         tamanho={9}
                         altura={11}
+                        alinhamento="left"
                       />
                     </View>
                   )}
@@ -697,9 +708,10 @@ export function DocumentoOrcamento({
               )}
               <BlocoIdentidade
                 linhas={gruposIdentidade.slogan}
-                tamanho={14}
-                altura={17}
+                tamanho={12}
+                altura={15}
                 serifado
+                alinhamento="left"
               />
             </View>
           </View>

@@ -83,3 +83,9 @@ Verificação pelo responsável: nome vazio/omitido aceito na validação compar
 196 testes unitários, lint, typecheck e build aprovados. O teste no navegador confirmou campo sem obrigatoriedade, instrução acessível, payload vazio e feedback de sucesso; PUT interceptado para não alterar a empresa, com GET posterior confirmando preservação. Axe sem violações nas regras selecionadas. As primeiras tentativas deste roteiro usavam contexto implícito do navegador, incompatível com axe; o contexto explícito corrigiu o roteiro, sem alteração do produto. Não houve nova migration.
 
 A oitava amostra `orcamento-somente-logo.pdf` foi renderizada e inspecionada: logo maior, ausência de nome/descrição, contatos preservados e sem colisão no cabeçalho. Verificador estrutural aprovou as77páginas dos oito exemplos, incluindo preservação de texto no caso extremo.
+
+## Alinhamento do cabeçalho
+
+Responsável, cidade, redes sociais e slogan agora têm uma origem comum à esquerda. O telefone opcional permanece na coluna direita. O responsável principal inspecionou o recorte real da amostra sem nome/telefone e a página completa com todos os contatos: sem sobreposição ou cortes. Dados das evidências são fictícios.
+
+Lint, 196 testes unitários, typecheck e build aprovados. Os oito PDFs foram renderizados novamente; o verificador estrutural aprovou as 77 páginas. Sem alteração de schema, autenticação ou cálculos.

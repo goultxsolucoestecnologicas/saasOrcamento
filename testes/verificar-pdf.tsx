@@ -164,6 +164,10 @@ export async function gerarAmostrasPdf(diretorio = resolve(".tmp")) {
                   nome === "orcamento-somente-logo.pdf"
                     ? ""
                     : empresaCompleta.nome,
+                telefone:
+                  nome === "orcamento-somente-logo.pdf"
+                    ? null
+                    : empresaCompleta.telefone,
               }
             : { nome: "Empresa Fictícia Demonstração" }
         }

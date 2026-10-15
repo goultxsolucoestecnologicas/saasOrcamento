@@ -103,6 +103,12 @@ Capturas reais em viewports390×844 e1440×900, de página inteira para mostrar 
 ![Configuração mobile](telas/mobile/configuracoes.png)
 ![Configuração desktop](telas/desktop/configuracoes.png)
 
+## Organização do cabeçalho
+
+Responsável e cidade compartilham o alinhamento à esquerda com as redes sociais e o slogan. O telefone opcional ocupa a coluna superior direita; os contatos usam colunas consistentes e o slogan tem tamanho menor. A logo ampliada continua sendo usada quando o nome da empresa está vazio.
+
+![Cabeçalho organizado, com dados fictícios](imagens/cabecalho-organizado.png)
+
 ## Limitações
 
 Impressão física, leitor de tela e teclado virtual em aparelho não testados. Helvetica atende os textos pt-BR das amostras; fontes e símbolos fora desse repertório não foram validados. Campos extremos podem gerar documentos longos; não há truncamento para forçar uma folha. O tipo Pedido identifica o documento, sem introduzir estoque, pagamento ou workflow de pedidos. Dados comerciais da empresa são os atuais no momento da geração; snapshot de identidade não fazia parte do modelo nem desta tarefa. Cadastro público no painel Supabase continua sendo a pendência externa registrada anteriormente. Nenhum merge automático ou migration destrutiva realizado.
